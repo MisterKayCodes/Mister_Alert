@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, ForeignKey
+from sqlalchemy import (
+    Column, Integer, String, Boolean, Numeric, DateTime, ForeignKey, func
+)
 from sqlalchemy.orm import relationship, declarative_base
-from datetime import datetime
 
 Base = declarative_base()
 
@@ -22,10 +23,10 @@ class Alert(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     symbol = Column(String, index=True, nullable=False)  # e.g., BTCUSD, EURUSD
-    price_above = Column(Float, nullable=True)  # Alert if price goes above this
-    price_below = Column(Float, nullable=True)  # Alert if price goes below this
+    price_above = Column(Numeric(precision=18, scale=8), nullable=True)
+    price_below = Column(Numeric(precision=18, scale=8), nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="alerts")
 
@@ -36,12 +37,13 @@ class Trade(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     symbol = Column(String, index=True, nullable=False)
-    entry_price = Column(Float, nullable=False)
-    stop_loss = Column(Float, nullable=True)
-    take_profit = Column(Float, nullable=True)
-    position_size = Column(Float, nullable=True)  # lot size or amount
-    opened_at = Column(DateTime, default=datetime.utcnow)
-    closed_at = Column(DateTime, nullable=True)
+    entry_price = Column(Numeric(precision=18, scale=8), nullable=False)
+    stop_loss = Column(Numeric(precision=18, scale=8), nullable=True)
+    take_profit = Column(Numeric(precision=18, scale=8), nullable=True)
+    position_size = Column(Numeric(precision=18, scale=8), nullable=True)  # lot size or amount
+    direction = Column(String, nullable=False)  # 'LONG' or 'SHORT'
+    opened_at = Column(DateTime(timezone=True), server_default=func.now())
+    closed_at = Column(DateTime(timezone=True), nullable=True)
     is_closed = Column(Boolean, default=False)
     result = Column(String, nullable=True)  # e.g., 'win', 'loss', 'break-even'
 

@@ -1,6 +1,6 @@
 # Mister Alert — System Architecture & Build Log
 
-> This document is the single source of truth for the Mister Alert project.
+> This document is the single source of truth for the Mister Alert project.  
 > Any AI or human developer should read this first before touching the code.
 
 ---
@@ -9,60 +9,60 @@
 
 Mister Alert is a modular trading assistant that provides:
 
-- Price alerts
-- Trade tracking (TP / SL)
-- Risk & position calculators
-- CSV trade analysis
+- Price alerts  
+- Trade tracking (TP / SL)  
+- Risk & position calculators  
+- CSV trade analysis  
 - Telegram bot UI
 
 Design goals:
 
-- Business logic is framework-independent
-- UI is replaceable (Telegram today, Web tomorrow)
-- Everything communicates via events
+- Business logic is framework-independent  
+- UI is replaceable (Telegram today, Web tomorrow)  
+- Everything communicates via events  
 - No tight coupling between systems
 
 ---
 
 # 2️⃣ Architecture Rules (DO NOT BREAK)
 
-- `core/` contains PURE business logic
-- `bot/` contains ONLY Telegram code
-- `services/` contains external integrations
-- `data/` contains DB only
-- `core/` NEVER imports:
-  - bot
-  - data
-  - services
+- `core/` contains PURE business logic  
+- `bot/` contains ONLY Telegram code  
+- `services/` contains external integrations  
+- `data/` contains DB only  
+- `core/` NEVER imports:  
+  - bot  
+  - data  
+  - services  
 
-- Communication:
-  - Core → emits events
-  - Services / Bot → subscribe to events
+- Communication:  
+  - Core → emits events  
+  - Services / Bot → subscribe to events  
 
 ---
 
 # 3️⃣ Folder Responsibilities
 
-## bot/
+## bot/  
 Telegram UI, commands, keyboards, states.
 
-## core/
-Business logic engines:
-- calculators/
-- alerts/
-- trades/
-- csv/
-- validators/
+## core/  
+Business logic engines:  
+- calculators/  
+- alerts/  
+- trades/  
+- csv/  
+- validators/  
 - events.py (event types)
 
-## services/
-- event_bus.py
-- price providers
+## services/  
+- event_bus.py  
+- price providers  
 - external APIs
 
-## data/
-- models
-- database
+## data/  
+- models  
+- database  
 - repositories
 
 ---
@@ -71,17 +71,17 @@ Business logic engines:
 
 ## Event Types
 
-- PriceUpdateEvent
-- AlertTriggeredEvent
-- AlertExpiredEvent
-- TradeOpenedEvent
-- TakeProfitHitEvent
-- StopLossHitEvent
-- CsvImportedEvent
+- PriceUpdateEvent  
+- AlertTriggeredEvent  
+- AlertExpiredEvent  
+- TradeOpenedEvent  
+- TakeProfitHitEvent  
+- StopLossHitEvent  
+- CsvImportedEvent  
 
-Location:
-- core/events.py
-- services/event_bus.py
+Location:  
+- core/events.py  
+- services/event_bus.py  
 
 Status: ✅ IMPLEMENTED
 
@@ -91,9 +91,9 @@ Status: ✅ IMPLEMENTED
 
 ## 5.1 Calculators — core/calculators/
 
-- Pips calculator ✅ DONE
-- Risk/Reward calculator ✅ DONE
-- Position size calculator ✅ DONE
+- Pips calculator ✅ DONE  
+- Risk/Reward calculator ✅ DONE  
+- Position size calculator ✅ DONE  
 
 Status: ✅ COMPLETE
 
@@ -101,25 +101,25 @@ Status: ✅ COMPLETE
 
 ## 5.2 Alert Engine — core/alerts/engine.py
 
-Purpose:
-- Receives price updates
-- Checks alerts
-- Emits:
-  - AlertTriggeredEvent
-  - AlertExpiredEvent
+Purpose:  
+- Receives price updates  
+- Checks alerts in-memory (loaded from DB via repositories)  
+- Emits:  
+  - AlertTriggeredEvent  
+  - AlertExpiredEvent  
 
-Status: ⏳ NOT IMPLEMENTED
+Status: ⏳ IN PROGRESS (Skeleton done, wiring & DB integration pending)
 
 ---
 
 ## 5.3 Trade Engine — core/trades/tracker.py
 
-Purpose:
-- Tracks open trades
-- Checks TP / SL
-- Emits:
-  - TakeProfitHitEvent
-  - StopLossHitEvent
+Purpose:  
+- Tracks open trades  
+- Checks TP / SL hits  
+- Emits:  
+  - TakeProfitHitEvent  
+  - StopLossHitEvent  
 
 Status: ⏳ NOT IMPLEMENTED
 
@@ -127,8 +127,8 @@ Status: ⏳ NOT IMPLEMENTED
 
 ## 5.4 CSV Engine — core/csv/
 
-- parser.py → parse CSV ⏳
-- analytics.py → compute stats ⏳
+- parser.py → parse CSV files ⏳  
+- analytics.py → compute trade statistics ⏳  
 
 Status: ⏳ NOT IMPLEMENTED
 
@@ -138,11 +138,11 @@ Status: ⏳ NOT IMPLEMENTED
 
 ## 6.1 Event Bus
 
-- File: services/event_bus.py
-- Purpose:
-  - Subscribe
-  - Publish
-  - Dispatch events
+- File: services/event_bus.py  
+- Purpose:  
+  - Subscribe to events  
+  - Publish events  
+  - Dispatch events asynchronously  
 
 Status: ✅ IMPLEMENTED
 
@@ -150,8 +150,8 @@ Status: ✅ IMPLEMENTED
 
 ## 6.2 Price Providers
 
-- Binance ⏳
-- TwelveData ⏳
+- Binance API ⏳  
+- TwelveData API ⏳  
 
 Status: ⏳ NOT IMPLEMENTED
 
@@ -159,9 +159,9 @@ Status: ⏳ NOT IMPLEMENTED
 
 # 7️⃣ Data Layer
 
-- SQLAlchemy models ✅
-- Alembic migrations ✅
-- Repositories ⏳ PARTIAL
+- SQLAlchemy models with precise Numeric types ✅  
+- Alembic migrations ✅  
+- Repository classes for DB access ⏳ PARTIAL  
 
 Status: ⚠️ IN PROGRESS
 
@@ -169,11 +169,11 @@ Status: ⚠️ IN PROGRESS
 
 # 8️⃣ Build Order (Follow This Always)
 
-1. Alert Engine
-2. Trade Engine
-3. Price Provider
-4. Bot integration
-5. CSV analytics
+1. Alert Engine  
+2. Trade Engine  
+3. Price Provider  
+4. Bot integration (Telegram event handlers)  
+5. CSV analytics  
 
 ---
 
@@ -186,9 +186,10 @@ Status: ⚠️ IN PROGRESS
 # 🔟 Change Log
 
 ## 2026-01-XX
-- Event system implemented
-- Calculators completed
-- Architecture finalized
+- Event system implemented  
+- Calculators completed  
+- Alert engine skeleton done  
+- Architecture finalized  
 
 ---
 
