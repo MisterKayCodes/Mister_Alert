@@ -62,23 +62,91 @@ Events = connects everything
 
 # 📁 Project Structure
 
-```
-trading_bot/
+Mister_Alert/
 │
 ├── main.py
 ├── config.py
 ├── requirements.txt
 │
-├── bot/              # Telegram UI layer
-├── core/             # Pure business logic
-├── services/         # APIs, event bus
-├── data/             # DB, models, schemas, repo
-└── utils/            # Helpers
-```
+├── bot/                           # 🧑‍💻 UI Layer (Telegram only)
+│   ├── __init__.py
+│   ├── dispatcher.py             # Bootstraps bot, routers, middlewares, listeners
+│   │
+│   ├── routers/                  # One file = one feature UI
+│   │   ├── start.py
+│   │   ├── alerts.py
+│   │   ├── calculators.py
+│   │   ├── trades.py
+│   │   ├── csv_analysis.py
+│   │   └── settings.py
+│   │
+│   ├── keyboards/
+│   │   ├── inline.py
+│   │   └── reply.py
+│   │
+│   ├── states/
+│   │   ├── alert_states.py
+│   │   ├── calculator_states.py
+│   │   ├── trade_states.py
+│   │   └── csv_states.py
+│   │
+│   ├── middlewares/
+│   │   └── permissions.py        # Free vs Paid gatekeeper
+│   │
+│   └── notification_handler.py   # 🔔 Listens to events and sends Telegram messages
+│
+├── core/                          # 🧠 Business Logic (PURE brain)
+│   ├── __init__.py
+│   │
+│   ├── calculators/
+│   │   ├── pips.py
+│   │   ├── risk_reward.py
+│   │   └── position_size.py
+│   │
+│   ├── alerts/
+│   │   └── engine.py             # Alert checking engine (emits events)
+│   │
+│   ├── trades/
+│   │   └── tracker.py            # Trade watcher (TP/SL logic)
+│   │
+│   ├── csv/
+│   │   ├── parser.py
+│   │   └── analytics.py
+│   │
+│   ├── validators/
+│   │   ├── prices.py
+│   │   └── numbers.py
+│   │
+│   └── events.py                 # System event definitions (AlertHit, TPHit, etc)
+│
+├── services/                      # 🌍 External world
+│   ├── __init__.py
+│   │
+│   ├── price_providers/
+│   │   ├── base.py               # Interface: get_price(symbol) -> float
+│   │   ├── binance.py
+│   │   └── twelve_data.py
+│   │
+│   └── event_bus.py              # Event system (in-memory / Redis / RabbitMQ)
+│
+├── data/                          # 🗄️ Memory & Data Shapes
+│   ├── database.py               # DB connection
+│   ├── models.py                 # SQLAlchemy models (tables)
+│   ├── schemas.py                # Pydantic schemas (data shapes)
+│   └── repository.py             # All DB operations
+│
+├── docs/                          # 📚 System truth
+│   └── Mister_Alert.md           # 🧠 Master architecture document
+│
+├── tests/                         # 🧪 Tests & manual runners
+│   ├── run_position_size.py
+│   ├── run_risk_reward.py
+│   └── test_calculators.py
+│
+└── utils/
+    ├── logger.py
+    └── helpers.py
 
-(See the full architecture document inside the project.)
-
----
 
 # ⚙️ Tech Stack
 
