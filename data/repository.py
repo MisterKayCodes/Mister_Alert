@@ -1,12 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
+from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
 
 from .models import User, Alert, Trade
 
 
 # =========================
-# USER REPOSITORY
+# USER REPOSITORY (Memory: Identity)
 # =========================
 
 class UserRepository:
@@ -46,7 +47,7 @@ class UserRepository:
 
 
 # =========================
-# ALERT REPOSITORY
+# ALERT REPOSITORY (Memory: Perception)
 # =========================
 
 class AlertRepository:
@@ -94,7 +95,7 @@ class AlertRepository:
 
 
 # =========================
-# TRADE REPOSITORY
+# TRADE REPOSITORY (Memory: History)
 # =========================
 
 class TradeRepository:
@@ -131,13 +132,18 @@ class TradeRepository:
         return list(result.scalars().all())
 
     async def close_trade(self, trade_id: int, result_text: str):
-        await self.session.execute(
-            update(Trade)
-            .where(Trade.id == trade_id)
-            .values(
-                is_closed=True,
-                closed_at=datetime.utcnow(),
-                result=result_text,
+        """Rule 5: Idempotent state change in the Vault."""
+        try:
+            await self.session.execute(
+                update(Trade)
+                .where(Trade.id == trade_id)
+                .values(
+                    is_closed=True,
+                    closed_at=func.now(),  # ✅ Handled by SQL engine
+                    result=result_text,
+                )
             )
-        )
-        await self.session.commit()
+            await self.session.commit()
+        except SQLAlchemyError as e:
+            await self.session.rollback()
+            raise e
