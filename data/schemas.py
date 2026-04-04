@@ -2,7 +2,6 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
-
 # =========================
 # USER SCHEMAS
 # =========================
@@ -54,6 +53,7 @@ class TradeCreate(BaseModel):
     stop_loss: Optional[float] = None
     take_profit: Optional[float] = None
     position_size: Optional[float] = None
+    direction: str  # 'LONG' or 'SHORT'
 
 
 class TradeRead(BaseModel):
@@ -64,8 +64,9 @@ class TradeRead(BaseModel):
     stop_loss: Optional[float]
     take_profit: Optional[float]
     position_size: Optional[float]
+    direction: str
     is_closed: bool
-    created_at: datetime
+    opened_at: datetime
     closed_at: Optional[datetime]
     result: Optional[str]
 

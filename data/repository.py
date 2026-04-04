@@ -93,6 +93,13 @@ class AlertRepository:
         )
         await self.session.commit()
 
+    async def delete_alert(self, alert_id: int):
+        from sqlalchemy import delete
+        await self.session.execute(
+            delete(Alert).where(Alert.id == alert_id)
+        )
+        await self.session.commit()
+
 
 # =========================
 # TRADE REPOSITORY (Memory: History)
@@ -110,6 +117,7 @@ class TradeRepository:
         stop_loss: float | None,
         take_profit: float | None,
         position_size: float | None,
+        direction: str = "LONG",
     ) -> Trade:
         trade = Trade(
             user_id=user_id,
@@ -118,6 +126,7 @@ class TradeRepository:
             stop_loss=stop_loss,
             take_profit=take_profit,
             position_size=position_size,
+            direction=direction,
             is_closed=False,
         )
         self.session.add(trade)
@@ -131,7 +140,7 @@ class TradeRepository:
         )
         return list(result.scalars().all())
 
-    async def close_trade(self, trade_id: int, result_text: str):
+    async def close_trade(self, trade_id: int, result_text: str, closed_at_price: float | None = None):
         """Rule 5: Idempotent state change in the Vault."""
         try:
             await self.session.execute(
@@ -140,6 +149,7 @@ class TradeRepository:
                 .values(
                     is_closed=True,
                     closed_at=func.now(),  # ✅ Handled by SQL engine
+                    closed_at_price=closed_at_price,
                     result=result_text,
                 )
             )
@@ -147,3 +157,36 @@ class TradeRepository:
         except SQLAlchemyError as e:
             await self.session.rollback()
             raise e
+
+    async def get_user_trade_history(self, user_id: int, limit: int = 10) -> list[Trade]:
+        """Fetch the latest closed trades for a user."""
+        result = await self.session.execute(
+            select(Trade)
+            .where(Trade.user_id == user_id, Trade.is_closed == True)
+            .order_by(Trade.closed_at.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
+    async def get_all_closed_trades(self, user_id: int) -> list[Trade]:
+        """Fetch all closed trades for performance analysis."""
+        result = await self.session.execute(
+            select(Trade)
+            .where(Trade.user_id == user_id, Trade.is_closed == True)
+        )
+        return list(result.scalars().all())
+
+    async def delete_trade(self, trade_id: int):
+        from sqlalchemy import delete
+        await self.session.execute(
+            delete(Trade).where(Trade.id == trade_id)
+        )
+        await self.session.commit()
+
+    async def update_trade_targets(self, trade_id: int, sl: float | None, tp: float | None):
+        await self.session.execute(
+            update(Trade)
+            .where(Trade.id == trade_id)
+            .values(stop_loss=sl, take_profit=tp)
+        )
+        await self.session.commit()

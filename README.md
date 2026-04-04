@@ -1,13 +1,16 @@
+Got it! Here’s a **comprehensive README.md** for Mister Alert incorporating everything you specified — updated project tree with `docs/` and `tests/`, plus the dependencies list with brief explanations.
 
+---
 
+```markdown
 # 🚨 Mister Alert
 
 **Mister Alert** is a modular, event-driven trading assistant for **crypto and forex** that tracks:
 
-* 📈 Price alerts
-* 🎯 TP / SL hits
-* 🧮 Risk & position calculations
-* 📊 Trade analytics (CSV import)
+* 📈 Price alerts  
+* 🎯 TP / SL hits  
+* 🧮 Risk & position calculations  
+* 📊 Trade analytics (CSV import)  
 
 It is built with **Python, Aiogram, SQLAlchemy, Alembic**, and a **clean scalable architecture** designed for long-term growth.
 
@@ -15,52 +18,58 @@ It is built with **Python, Aiogram, SQLAlchemy, Alembic**, and a **clean scalabl
 
 # ✨ Features
 
-* ✅ Price alerts (crypto & forex)
-* ✅ TP / SL hit notifications
-* ✅ Trade tracking
-* ✅ Position size, pips, and risk/reward calculators
-* ✅ CSV trade analytics
-* ✅ Multi-price API support (CoinGecko, ExchangeRate.host, etc)
-* ✅ Event-driven architecture
-* ✅ Clean separation of concerns
-* ✅ Free & paid feature gating (ready)
-* ✅ Built for Telegram (but reusable anywhere)
+* ✅ **Real-time Price Alerts** (Crypto via Binance, Forex via Twelve Data)
+* ✅ **Tiered Speed Logic**: Premium (10s latency) vs Free (120s latency)
+* ✅ **TP / SL Hit Notifications**
+* ✅ **Interactive Trade Tracking**
+* ✅ **The Strategist**: Position size, pips, and risk/reward calculators
+* ✅ **Subscription Gating**: Built-in limits (3 alerts for Free users)
+* ✅ **Conversion Psychology**: Footers and speed-gap reporting to drive upgrades
+* ✅ **Admin Command Center**: /admin tools for user management
+* ✅ **Event-Driven Architecture**: Clean separation of concerns (Core vs UI vs Services)
 
 ---
 
 # 🏗️ Architecture Overview
 
-The project is split into **5 independent layers**:
+| Layer       | Role | Components |
+| ----------- | ---- | ---------- |
+| **Talking** | `bot/` | Dispatcher, Routers, Keyboards, Middlewares |
+| **Thinking** | `core/` | Alert Engine, Trade Tracker, Calculators, Events |
+| **Fetching** | `services/` | Price Providers (Binance, TwelveData), EventBus |
+| **Remembering** | `data/` | Database (SQLite), Repository, Models |
 
-```
-User → bot → core → data/services → core → events → bot → User
-```
+---
 
-| Layer       | Purpose                      |
-| ----------- | ---------------------------- |
-| `bot/`      | Telegram UI (talks to users) |
-| `core/`     | Business logic (brain)       |
-| `services/` | External APIs & integrations |
-| `data/`     | Database, models, schemas    |
-| `utils/`    | Helpers, logging             |
+# 💎 Subscription Tiers
 
-> ⚠️ The core logic never talks to Telegram, SQL, or APIs directly.
+| Feature | Free Tier | Premium Tier |
+| --- | --- | --- |
+| **Alert Limit** | 3 Active Alerts | Unlimited |
+| **Trade Tracker** | 1 Active Trade | Unlimited |
+| **Latency** | 120s (Slow Lane) | 10s (Fast Lane) |
+| **Status Footers** | Included | Removed |
+| **Support** | Standard | Priority VIP |
 
 ---
 
 # 🧠 Mental Model
 
 ```
-Bot = talks  
-Core = thinks  
-Services = fetches  
-Data = remembers  
-Events = connects everything  
+
+Bot = talks
+Core = thinks
+Services = fetches
+Data = remembers
+Events = connects everything
+
 ```
 
 ---
 
 # 📁 Project Structure
+
+```
 
 Mister_Alert/
 │
@@ -69,7 +78,7 @@ Mister_Alert/
 ├── requirements.txt
 │
 ├── bot/                           # 🧑‍💻 UI Layer (Telegram only)
-│   ├── __init__.py
+│   ├── **init**.py
 │   ├── dispatcher.py             # Bootstraps bot, routers, middlewares, listeners
 │   │
 │   ├── routers/                  # One file = one feature UI
@@ -96,7 +105,7 @@ Mister_Alert/
 │   └── notification_handler.py   # 🔔 Listens to events and sends Telegram messages
 │
 ├── core/                          # 🧠 Business Logic (PURE brain)
-│   ├── __init__.py
+│   ├── **init**.py
 │   │
 │   ├── calculators/
 │   │   ├── pips.py
@@ -120,7 +129,7 @@ Mister_Alert/
 │   └── events.py                 # System event definitions (AlertHit, TPHit, etc)
 │
 ├── services/                      # 🌍 External world
-│   ├── __init__.py
+│   ├── **init**.py
 │   │
 │   ├── price_providers/
 │   │   ├── base.py               # Interface: get_price(symbol) -> float
@@ -136,7 +145,8 @@ Mister_Alert/
 │   └── repository.py             # All DB operations
 │
 ├── docs/                          # 📚 System truth
-│   └── Mister_Alert.md           # 🧠 Master architecture document
+│   ├── Mister_Alert.md           # 🧠 Master architecture document
+│   └── Mister_Rulebook.md        # 📜 Coding and design rules
 │
 ├── tests/                         # 🧪 Tests & manual runners
 │   ├── run_position_size.py
@@ -144,123 +154,112 @@ Mister_Alert/
 │   └── test_calculators.py
 │
 └── utils/
-    ├── logger.py
-    └── helpers.py
+├── logger.py
+└── helpers.py
 
+````
 
-# ⚙️ Tech Stack
+---
 
-* Python 3.11+
-* Aiogram v3
-* SQLAlchemy 2.0
-* Alembic
-* Pydantic
-* HTTPX
-* aiosqlite
-* TaskIQ (for background jobs)
-* SQLite (for now, swappable later)
+# ⚙️ Tech Stack & Dependencies
+
+* **Python 3.11+** – Modern Python version  
+* **aiogram==3.4.1** – Async Telegram bot framework  
+* **pydantic==2.5.2** & **pydantic-settings==2.2.1** – Data validation and settings management  
+* **SQLAlchemy==2.0.25** – Async ORM for database access  
+* **alembic==1.13.0** – Database migrations  
+* **aiosqlite==0.19.0** – Async SQLite driver  
+* **httpx==0.26.0** – Async HTTP client for external APIs  
+* **taskiq==0.11.7** – Async background task processing  
+* **anyio==4.2.0** – Async networking and concurrency foundation  
+* **loguru==0.7.2** – Structured logging library  
+* **python-dateutil==2.8.2** – Date parsing and utilities  
+* **orjson==3.9.10** – Fast JSON serialization/deserialization  
 
 ---
 
 # 🚀 Setup & Installation
 
-## 1️⃣ Clone repo
+1. **Clone repo**
 
-```bash
-git clone https://github.com/YOUR_USERNAME/Mister_Alert.git
-cd Mister_Alert
-```
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/Mister_Alert.git
+   cd Mister_Alert
+````
 
-## 2️⃣ Create virtual environment
+2. **Create virtual environment**
 
-```bash
-python -m venv venv
-source venv/bin/activate   # Linux / Mac
-venv\Scripts\activate      # Windows
-```
+   ```bash
+   python -m venv venv
+   source venv/bin/activate   # Linux / Mac
+   venv\Scripts\activate      # Windows
+   ```
 
-## 3️⃣ Install dependencies
+3. **Install dependencies**
 
-```bash
-pip install -r requirements.txt
-```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-## 4️⃣ Create `.env`
+4. **Create `.env` file**
 
-```env
-BOT_TOKEN=your_telegram_bot_token
+   ```env
+   BOT_TOKEN=your_telegram_bot_token
 
-COINGECKO_BASE_URL=https://api.coingecko.com/api/v3
-EXCHANGE_RATE_BASE_URL=https://api.exchangerate.host
+   COINGECKO_BASE_URL=https://api.coingecko.com/api/v3
+   EXCHANGE_RATE_BASE_URL=https://api.exchangerate.host
 
-DATABASE_URL=sqlite+aiosqlite:///./Mister_alert.db
-```
+   DATABASE_URL=sqlite+aiosqlite:///./Mister_alert.db
+   ```
 
-## 5️⃣ Run migrations
+5. **Run database migrations**
 
-```bash
-alembic upgrade head
-```
+   ```bash
+   alembic upgrade head
+   ```
 
-## 6️⃣ Run the bot
+6. **Run the bot**
 
-```bash
-python main.py
-```
-
----
-
-# 🗄️ Database Migrations
-
-Create new migration:
-
-```bash
-alembic revision --autogenerate -m "message"
-```
-
-Apply migrations:
-
-```bash
-alembic upgrade head
-```
+   ```bash
+   python main.py
+   ```
 
 ---
 
 # 🧩 Key Design Principles
 
-* ✅ Event-driven
-* ✅ Decoupled layers
-* ✅ Replaceable APIs
-* ✅ Replaceable UI (Telegram, Web, etc)
-* ✅ Testable core logic
-* ✅ Long-term maintainability
+* Event-driven architecture
+* Strict separation of concerns and layers
+* Replaceable UI and API providers
+* Testable, maintainable core business logic
+* Scalable for future growth
 
 ---
 
 # 🧪 Future Roadmap
 
-* Web dashboard
-* Multi-user plans
-* Strategy analytics
-* More brokers & APIs
+* Web dashboard interface
+* Multi-user subscription plans
+* Strategy analytics & reporting
+* Additional brokers & price APIs
 * Backtesting engine
-* Subscription billing
+* Subscription billing system
 * Cloud deployment
 
 ---
 
 # 🏆 Who This Is For
 
-* Traders
-* Developers building fintech tools
-* Anyone who wants a **serious trading assistant**
-* Anyone who wants to learn **clean architecture**
+* Traders looking for automated trade alerts
+* Developers building fintech or trading tools
+* Anyone wanting a robust, maintainable trading assistant
+* Learners exploring clean architecture in Python
 
 ---
 
 # 🛡️ License
 
-MIT (or choose one)
+MIT License (or your preferred license)
 
 ---
 
@@ -272,7 +271,11 @@ MIT (or choose one)
 
 # 🤝 Contributing
 
-PRs are welcome.
-Architecture discipline is mandatory.
+Pull requests are welcome. Please respect architecture and code quality.
 
 ---
+
+```
+
+---
+

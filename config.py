@@ -1,14 +1,29 @@
-from pydantic import BaseSettings, Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
+from typing import Optional, Union, List, Any
 
 class Settings(BaseSettings):
-    telegram_token: SecretStr = Field(..., env="TELEGRAM_TOKEN")
-    database_url: str = Field("sqlite+aiosqlite:///./Mister_alert.db", env="DATABASE_URL")
+    telegram_token: str = "dummy"
+    database_url: str = "sqlite+aiosqlite:///./Mister_alert.db"
+    max_free_alerts: int = 3
+    log_level: str = "INFO"
+    twelve_data_api_key: str = "your_twelve_data_key"
+    polling_interval: int = 60
+    admin_ids: List[int] = []
 
-    max_free_alerts: int = Field(3, env="MAX_FREE_ALERTS")
-    log_level: str = Field("INFO", env="LOG_LEVEL")
+    @field_validator("admin_ids", mode="before")
+    @classmethod
+    def parse_admin_ids(cls, v: Any) -> List[int]:
+        if isinstance(v, str):
+            return [int(x.strip()) for x in v.split(",") if x.strip()]
+        if isinstance(v, int):
+            return [v]
+        return v
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 settings = Settings()

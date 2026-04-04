@@ -15,13 +15,15 @@ def calculate_risk_reward(pair: str, position: str, entry_price: float, stop_los
     rr_ratio = reward_pips / risk_pips
     
     def format_decimal(value: float) -> str:
-        # Format with max 1 decimal place, no trailing zeros
-        return f"{value:.1f}".rstrip('0').rstrip('.') if '.' in f"{value:.1f}" else f"{value:.1f}"
+        if value == int(value):
+            return str(int(value))
+        return f"{value:.1f}".rstrip('0').rstrip('.')
     
     return {
         "position": position,
         "risk_pips": format_decimal(risk_pips),
         "reward_pips": format_decimal(reward_pips),
         "risk_reward_ratio": format_decimal(rr_ratio),
+        "ratio_label": f"1:{format_decimal(rr_ratio)}",
         "formatted": f"R:R {format_decimal(rr_ratio)} (Risk: {format_decimal(risk_pips)} pips, Reward: {format_decimal(reward_pips)} pips)"
     }
