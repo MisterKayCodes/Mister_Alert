@@ -54,9 +54,9 @@ class SubscriptionMiddleware(BaseMiddleware):
             if active_count >= limit_premium:
                 await event.answer("⛔ Premium limit reached.", show_alert=True)
                 return
-        elif user.credits > 0:
+        elif (user.credits or 0) > 0:
             # Has credits — allow but consume a credit
-            if active_count >= (limit_free + user.credits):
+            if active_count >= (limit_free + (user.credits or 0)):
                 await event.answer("🚫 Credit limit reached.", show_alert=True)
                 return await event.message.answer(
                     "🚫 *All Credit Slots Used!*\n\n"

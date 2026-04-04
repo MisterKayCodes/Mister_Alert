@@ -15,10 +15,12 @@ logger = logging.getLogger(__name__)
 
 @router.message(F.text == "📜 History")
 async def history_menu(message: types.Message):
+    tmp = await message.answer("⏳ _Loading..._", parse_mode="Markdown")
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text="📊 Performance Stats", callback_data="stats_performance")],
         [types.InlineKeyboardButton(text="📜 Last 10 Trades", callback_data="stats_history")],
     ])
+    await tmp.delete()
     await message.answer(
         section("📜", "Trade Historian", "Analyze your past performance and trading edge."),
         reply_markup=kb, parse_mode="Markdown"

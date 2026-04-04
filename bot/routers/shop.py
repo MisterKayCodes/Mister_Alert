@@ -27,6 +27,7 @@ class ShopStates(StatesGroup):
 
 @router.message(F.text == "🛒 Shop")
 async def shop_menu(message: types.Message):
+    tmp = await message.answer("⏳ _Loading..._", parse_mode="Markdown")
     telegram_id = str(message.from_user.id)
     async with AsyncSessionLocal() as session:
         user_repo = UserRepository(session)
@@ -45,8 +46,9 @@ async def shop_menu(message: types.Message):
         [types.InlineKeyboardButton(text="👑 Yearly Premium", callback_data="buy:yearly")],
         [types.InlineKeyboardButton(text="📜 My Transactions", callback_data="my_transactions")],
     ])
+    await tmp.delete()
     await message.answer(
-        shop_menu_text(tier, user.credits, currency, price_credits, price_monthly, price_yearly),
+        shop_menu_text(tier, user.credits or 0, currency, price_credits, price_monthly, price_yearly),
         reply_markup=kb, parse_mode="Markdown"
     )
 

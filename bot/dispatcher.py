@@ -33,8 +33,16 @@ def setup_routers():
     dp.message.middleware(SubscriptionMiddleware())
     dp.callback_query.middleware(SubscriptionMiddleware())
 
+@dp.startup()
+async def on_startup(bot: Bot):
+    print("\n" + "="*55)
+    print("🚀 THE BOT IS NOW FULLY RUNNING! YOU CAN CLICK /start")
+    print("="*55 + "\n")
+
 async def start_bot():
     """Entry point for polling."""
     setup_routers()
     logging.info("Bot logic initialized.")
+    # Drop pending updates so offline button spam doesn't crowd SQLite on boot
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
