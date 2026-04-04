@@ -4,8 +4,11 @@ from core.events import AlertTriggeredEvent, TakeProfitHitEvent
 from services.event_bus import event_bus
 from data.database import AsyncSessionLocal
 from data.repository import UserRepository
+from data.economy_repository import SettingsRepository
+from utils.fmt import DIVIDER, row
 
 logger = logging.getLogger(__name__)
+
 
 class NotificationHandler:
     """
@@ -16,63 +19,61 @@ class NotificationHandler:
         self.bot = bot
 
     def setup(self):
-        """Subscribe to events."""
         event_bus.subscribe(AlertTriggeredEvent, self.handle_alert_hit)
         event_bus.subscribe(TakeProfitHitEvent, self.handle_tp_hit)
         logger.info("NotificationHandler subscribed to Alert and Trade events.")
 
     async def handle_alert_hit(self, event: AlertTriggeredEvent):
-        """Send notification when an alert is hit."""
         async with AsyncSessionLocal() as session:
             user_repo = UserRepository(session)
-            user = await user_repo.session.get(UserRepository.User, event.user_id)
+            settings_repo = SettingsRepository(session)
+
+            # Option B fix: repo owns all user lookups
+            user = await user_repo.get_by_id(event.user_id)
             if not user:
-                logger.error(f"User {event.user_id} not found for alert {event.alert_id}")
+                logger.error("User %s not found for alert %s", event.user_id, event.alert_id)
                 return
-            
+
             telegram_id = user.telegram_id
-            
-        message = (
-            f"🔔 **ALERT TRIGGERED!** 🚨\n\n"
-            f"Symbol: {event.symbol}\n"
-            f"Target: {event.target_price}\n"
-            f"Current: {event.price}\n\n"
-            f"Time: {event.timestamp.strftime('%H:%M:%S')}"
-        )
-        
-        if not user.is_premium:
-            message += (
-                f"\n\n---\n"
-                f"⚡ **Premium users caught this 110s faster.**\n"
-                f"Don't leave your entry to chance. Upgrade now!"
-            )
-        
+            sub_footer = await settings_repo.get("subscription_footer") or ""
+
+        ts = event.timestamp.strftime("%H:%M:%S")
+        body = "\n".join([
+            row("📌", "Symbol", event.symbol),
+            row("🎯", "Target", event.target_price),
+            row("💹", "Current", event.price),
+            row("🕒", "Time", ts),
+        ])
+        message = "🔔 *ALERT TRIGGERED!*\n" + DIVIDER + "\n" + body
+
+        if not user.is_premium and sub_footer:
+            message += "\n\n" + DIVIDER + "\n_" + sub_footer + "_"
+
         try:
             await self.bot.send_message(chat_id=telegram_id, text=message, parse_mode="Markdown")
-            logger.info(f"Notification sent to {telegram_id} for alert {event.alert_id}")
+            logger.info("Alert notification sent to %s", telegram_id)
         except Exception as e:
-            logger.error(f"Failed to send alert notification to {telegram_id}: {e}")
+            logger.error("Failed to send alert notification to %s: %s", telegram_id, e)
 
     async def handle_tp_hit(self, event: TakeProfitHitEvent):
-        """Send notification when a take profit is hit."""
         async with AsyncSessionLocal() as session:
             user_repo = UserRepository(session)
-            user = await user_repo.session.get(UserRepository.User, event.user_id)
+            user = await user_repo.get_by_id(event.user_id)
             if not user:
                 return
-            
             telegram_id = user.telegram_id
 
-        message = (
-            f"📈 **TAKE PROFIT HIT!** 💰\n\n"
-            f"Symbol: {event.symbol}\n"
-            f"Price: {event.price}\n"
-            f"Trade ID: {event.trade_id}\n\n"
-            f"Time: {event.timestamp.strftime('%H:%M:%S')}"
-        )
+        ts = event.timestamp.strftime("%H:%M:%S")
+        body = "\n".join([
+            row("📌", "Symbol", event.symbol),
+            row("💰", "Exit Price", event.price),
+            row("🔑", "Trade ID", event.trade_id),
+            row("🕒", "Time", ts),
+        ])
+        message = "📈 *TAKE PROFIT HIT!* 💰\n" + DIVIDER + "\n" + body
 
         try:
             await self.bot.send_message(chat_id=telegram_id, text=message, parse_mode="Markdown")
-            logger.info(f"TP notification sent to {telegram_id} for trade {event.trade_id}")
+            logger.info("TP notification sent to %s", telegram_id)
         except Exception as e:
-            logger.error(f"Failed to send TP notification to {telegram_id}: {e}")
+            logger.error("Failed to send TP notification to %s: %s", telegram_id, e)

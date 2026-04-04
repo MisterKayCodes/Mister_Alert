@@ -37,6 +37,11 @@ class UserRepository:
             return user
         return await self.create_user(telegram_id, username)
 
+    async def get_by_id(self, user_id: int) -> User | None:
+        """Fetch a user by their internal DB primary key."""
+        from data.models import User as UserModel
+        return await self.session.get(UserModel, user_id)
+
     async def set_premium(self, user_id: int, is_premium: bool):
         await self.session.execute(
             update(User)

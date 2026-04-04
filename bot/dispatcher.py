@@ -10,6 +10,7 @@ storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
 from .middlewares.permissions import SubscriptionMiddleware
+from .middlewares.throttle import ThrottleMiddleware
 
 # 2. Main Router Setup (Will be populated in next steps)
 def setup_routers():
@@ -23,7 +24,12 @@ def setup_routers():
     dp.include_router(history.router)
     dp.include_router(shop.router)
     
-    # Register Middlewares
+    # ThrottleMiddleware FIRST — drops duplicate taps before any DB call
+    throttle = ThrottleMiddleware()
+    dp.message.middleware(throttle)
+    dp.callback_query.middleware(throttle)
+
+    # SubscriptionMiddleware SECOND — gates alert creation
     dp.message.middleware(SubscriptionMiddleware())
     dp.callback_query.middleware(SubscriptionMiddleware())
 

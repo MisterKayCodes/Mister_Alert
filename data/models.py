@@ -16,6 +16,7 @@ class User(Base):
     premium_until = Column(DateTime(timezone=True), nullable=True)
     credits = Column(Integer, default=0)
     preferred_currency = Column(String, default="USD")
+    timezone = Column(String, default="UTC")       # IANA timezone string e.g. "Africa/Lagos"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     alerts = relationship("Alert", back_populates="user")
