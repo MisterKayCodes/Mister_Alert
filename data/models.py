@@ -33,6 +33,7 @@ class Alert(Base):
     price_above = Column(Numeric(precision=18, scale=8), nullable=True)
     price_below = Column(Numeric(precision=18, scale=8), nullable=True)
     is_active = Column(Boolean, default=True)
+    is_boosted = Column(Boolean, default=False)   # True = fast lane even on free tier
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="alerts")

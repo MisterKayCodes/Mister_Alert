@@ -118,14 +118,14 @@ class PriceService:
             from sqlalchemy import select
             from data.models import Alert, Trade, User
             
-            # 1. Check Alerts
+            # 1. Check Alerts — fast if user is premium OR alert is individually boosted
             alert_query = await session.execute(
-                select(Alert.symbol, User.is_premium)
+                select(Alert.symbol, User.is_premium, Alert.is_boosted)
                 .join(User, Alert.user_id == User.id)
                 .where(Alert.is_active == True)
             )
-            for symbol, is_premium in alert_query.all():
-                if is_premium:
+            for symbol, is_premium, is_boosted in alert_query.all():
+                if is_premium or is_boosted:
                     fast.add(symbol)
                 else:
                     slow.add(symbol)

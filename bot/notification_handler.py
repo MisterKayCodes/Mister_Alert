@@ -6,6 +6,7 @@ from data.database import AsyncSessionLocal
 from data.repository import UserRepository
 from data.economy_repository import SettingsRepository
 from utils.fmt import DIVIDER, row
+from utils.timezone_helper import format_time_for_user
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,6 @@ class NotificationHandler:
             user_repo = UserRepository(session)
             settings_repo = SettingsRepository(session)
 
-            # Option B fix: repo owns all user lookups
             user = await user_repo.get_by_id(event.user_id)
             if not user:
                 logger.error("User %s not found for alert %s", event.user_id, event.alert_id)
@@ -36,8 +36,11 @@ class NotificationHandler:
 
             telegram_id = user.telegram_id
             sub_footer = await settings_repo.get("subscription_footer") or ""
+            user_tz = user.timezone or "UTC"
 
-        ts = event.timestamp.strftime("%H:%M:%S")
+        # Format time in user's local timezone
+        ts = format_time_for_user(event.timestamp, user_tz)
+
         body = "\n".join([
             row("📌", "Symbol", event.symbol),
             row("🎯", "Target", event.target_price),

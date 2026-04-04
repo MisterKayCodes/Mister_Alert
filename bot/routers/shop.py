@@ -55,6 +55,7 @@ async def shop_menu(message: types.Message):
 
 @router.callback_query(F.data.startswith("buy:"))
 async def select_payment_method(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer("⏳")  # Clear Telegram spinner instantly
     tx_type = callback.data.split(":")[1]
     await state.update_data(tx_type=tx_type)
 
@@ -79,11 +80,11 @@ async def select_payment_method(callback: types.CallbackQuery, state: FSMContext
         reply_markup=types.InlineKeyboardMarkup(inline_keyboard=buttons),
         parse_mode="Markdown"
     )
-    await callback.answer()
 
 
 @router.callback_query(F.data.startswith("pm:"))
 async def show_payment_details(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer("⏳")  # Clear Telegram spinner instantly
     pm_id = int(callback.data.split(":")[1])
     await state.update_data(pm_id=pm_id)
 
@@ -103,18 +104,17 @@ async def show_payment_details(callback: types.CallbackQuery, state: FSMContext)
         ]),
         parse_mode="Markdown"
     )
-    await callback.answer()
 
 
 @router.callback_query(F.data == "have_paid")
 async def request_amount(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer("⏳")  # Clear Telegram spinner instantly
     await state.set_state(ShopStates.awaiting_amount)
     await callback.message.answer(
         header("💰", "Payment Confirmation — Step 1 of 2") + "\n" + DIVIDER + "\n"
         "Enter the *exact amount* you paid (numbers only):",
         parse_mode="Markdown"
     )
-    await callback.answer()
 
 
 @router.message(ShopStates.awaiting_amount)
@@ -171,6 +171,7 @@ async def receive_evidence(message: types.Message, state: FSMContext):
 
 @router.callback_query(F.data == "my_transactions")
 async def my_transactions(callback: types.CallbackQuery):
+    await callback.answer("⏳")  # Clear Telegram spinner instantly
     telegram_id = str(callback.from_user.id)
     async with AsyncSessionLocal() as session:
         user_repo = UserRepository(session)
@@ -205,6 +206,7 @@ async def my_transactions(callback: types.CallbackQuery):
 
 @router.callback_query(F.data == "pick_currency")
 async def pick_currency(callback: types.CallbackQuery):
+    await callback.answer("⏳")  # Clear Telegram spinner instantly
     buttons = [
         [types.InlineKeyboardButton(text=c, callback_data="set_currency:" + c)]
         for c in SUPPORTED_CURRENCIES
@@ -215,7 +217,6 @@ async def pick_currency(callback: types.CallbackQuery):
         reply_markup=types.InlineKeyboardMarkup(inline_keyboard=buttons),
         parse_mode="Markdown"
     )
-    await callback.answer()
 
 
 @router.callback_query(F.data.startswith("set_currency:"))
@@ -237,4 +238,3 @@ async def set_currency(callback: types.CallbackQuery):
         "_Shop prices now show in " + currency + "._",
         parse_mode="Markdown"
     )
-    await callback.answer()

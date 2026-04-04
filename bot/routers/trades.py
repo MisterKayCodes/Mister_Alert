@@ -24,6 +24,7 @@ async def trades_menu(message: types.Message):
 
 @router.callback_query(F.data == "view_trades")
 async def view_trades(callback: types.CallbackQuery):
+    await callback.answer("⏳")  # Clear Telegram spinner instantly
     telegram_id = str(callback.from_user.id)
     async with AsyncSessionLocal() as session:
         user_repo = UserRepository(session)
@@ -63,6 +64,7 @@ async def view_trades(callback: types.CallbackQuery):
 
 @router.callback_query(F.data.startswith("delete_trade:"))
 async def delete_trade_handler(callback: types.CallbackQuery):
+    await callback.answer("⏳")  # Clear Telegram spinner instantly
     trade_id = int(callback.data.split(":")[1])
     async with AsyncSessionLocal() as session:
         trade_repo = TradeRepository(session)
@@ -73,6 +75,7 @@ async def delete_trade_handler(callback: types.CallbackQuery):
 
 @router.callback_query(F.data.startswith("close_trade:"))
 async def close_trade_manual(callback: types.CallbackQuery):
+    await callback.answer("⏳")  # Clear Telegram spinner instantly
     trade_id = int(callback.data.split(":")[1])
     async with AsyncSessionLocal() as session:
         trade_repo = TradeRepository(session)
