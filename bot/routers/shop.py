@@ -33,7 +33,7 @@ async def shop_menu(message: types.Message):
         user_repo = UserRepository(session)
         settings_repo = SettingsRepository(session)
         user = await user_repo.get_or_create(telegram_id, message.from_user.username)
-        currency = user.preferred_currency
+        currency = user.preferred_currency or "USD"
         price_credits = await settings_repo.get("price_credits_10") or "500"
         price_monthly = await settings_repo.get("price_premium_monthly") or "2000"
         price_yearly = await settings_repo.get("price_premium_yearly") or "18000"
