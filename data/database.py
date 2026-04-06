@@ -16,3 +16,10 @@ AsyncSessionLocal = sessionmaker(
     expire_on_commit=False,
     class_=AsyncSession,
 )
+
+async def init_models():
+    """Create all tables defined in models.py if they don't exist."""
+    from .models import Base
+    async with engine.begin() as conn:
+        # Create all tables
+        await conn.run_sync(Base.metadata.create_all)

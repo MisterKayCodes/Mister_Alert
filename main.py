@@ -39,6 +39,11 @@ logger.add(sys.stdout, format="<green>{time:HH:mm:ss}</green> | <level>{level: <
 async def main():
     logger.info("🚀 Starting Mister Alert System...")
 
+    # 1. Initialize Database Schema (Create missing tables)
+    from data.database import init_models
+    await init_models()
+    logger.info("✅ Database schema initialized.")
+
     # 2. Seed default settings & payment methods (idempotent — safe on every restart)
     from data.seeder import seed_defaults
     await seed_defaults()
