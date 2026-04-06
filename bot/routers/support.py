@@ -24,24 +24,48 @@ async def support_request(message: types.Message, state: FSMContext):
 
 @router.message(SupportStates.waiting_for_message)
 async def forward_to_admins(message: types.Message, state: FSMContext, bot: Bot):
-    """Forward user message to all configured admins."""
-    user = message.from_user
-    user_info = f"👤 *Support Ticket*\nFrom: {user.full_name} (@{user.username})\nID: `{user.id}`\n"
+    """Forward user message to all configured admins and save to DB."""
+    user_id = message.from_user.id
+    text = message.text.strip()
     
-    forward_text = f"{user_info}\n💬 *Message:*\n{message.text}"
-    
-    success_count = 0
-    for admin_id in settings.admin_ids:
-        try:
-            # We don't use built-in forward because we want to format it with the user ID for easy reply parsing
-            await bot.send_message(
-                chat_id=admin_id,
-                text=forward_text,
-                parse_mode="Markdown"
-            )
-            success_count += 1
-        except Exception as e:
-            logger.error(f"Failed to forward support message to admin {admin_id}: {e}")
+    from data.database import AsyncSessionLocal
+    from data.repository import UserRepository
+    from data.support_repository import SupportTicketRepository
+
+    async with AsyncSessionLocal() as session:
+        user_repo = UserRepository(session)
+        support_repo = SupportTicketRepository(session)
+        
+        user = await user_repo.get_by_telegram_id(str(user_id))
+        if not user:
+            # Should not happen as they are in the bot, but safety first
+            await message.answer("❌ User account not found.")
+            return
+            
+        # 1. Save to Database
+        ticket = await support_repo.create(user.id, text)
+        
+        # 2. Prepare Admin Notification
+        user_info = f"👤 *Support Ticket #{ticket.id}*\nFrom: {message.from_user.full_name} (@{message.from_user.username})\nID: `{user_id}`\n"
+        forward_text = f"{user_info}\n💬 *Message:*\n{text}"
+        
+        # 3. Add Reply Button for Admin
+        kb = types.InlineKeyboardMarkup(inline_keyboard=[
+            [types.InlineKeyboardButton(text="💬 Reply Now", callback_data=f"admin:reply_ticket:{ticket.id}")]
+        ])
+        
+        success_count = 0
+        for admin_id in settings.admin_ids:
+            try:
+                await bot.send_message(
+                    chat_id=admin_id,
+                    text=forward_text,
+                    parse_mode="Markdown",
+                    reply_markup=kb
+                )
+                success_count += 1
+            except Exception as e:
+                logger.error(f"Failed to forward support message to admin {admin_id}: {e}")
 
     if success_count > 0:
         await message.answer("✅ Your message has been sent to support. Please wait for a reply.")

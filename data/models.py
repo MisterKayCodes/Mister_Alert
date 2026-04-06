@@ -22,6 +22,7 @@ class User(Base):
     alerts = relationship("Alert", back_populates="user")
     trades = relationship("Trade", back_populates="user")
     transactions = relationship("Transaction", back_populates="user")
+    support_tickets = relationship("SupportTicket", back_populates="user")
 
 
 class Alert(Base):
@@ -103,3 +104,18 @@ class Transaction(Base):
 
     user = relationship("User", back_populates="transactions")
     payment_method = relationship("PaymentMethod", back_populates="transactions")
+
+
+class SupportTicket(Base):
+    """Stores support messages from users and admin replies."""
+    __tablename__ = "support_tickets"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    message = Column(Text, nullable=False)
+    admin_reply = Column(Text, nullable=True)
+    status = Column(String, default="open")  # 'open', 'replied'
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    replied_at = Column(DateTime(timezone=True), nullable=True)
+
+    user = relationship("User", back_populates="support_tickets")
