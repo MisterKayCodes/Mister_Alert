@@ -148,14 +148,19 @@ def rr_report(pair: str, position: str, result: dict) -> str:
 
 
 def shop_menu_text(tier: str, credits: int, currency: str,
-                   price_credits: str, price_monthly: str, price_yearly: str) -> str:
+                   price_credits: str, price_weekly: str, price_monthly: str, price_yearly: str) -> str:
     body = "\n".join([
         row("👤", "Tier", tier),
         row("🪙", "Credits", credits),
         row("🌍", "Currency", currency),
         "",
+        "ℹ️ *Free Tier:* 3 Active Alerts (Standard Queue)",
+        "ℹ️ *Premium:* Unlimited Active Alerts + Priority Fast-Lane Queue",
+        "ℹ️ *Credits:* Use 1 Credit to instantly boost any Free alert into the Fast-Lane",
+        "",
         "*Pricing (" + currency + "):*",
         "  · 10 Credits — `" + price_credits + "`",
+        "  · Weekly Premium — `" + price_weekly + "`",
         "  · Monthly Premium — `" + price_monthly + "`",
         "  · Yearly Premium — `" + price_yearly + "`",
     ])

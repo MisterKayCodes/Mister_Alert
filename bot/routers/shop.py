@@ -27,28 +27,35 @@ class ShopStates(StatesGroup):
 
 @router.message(F.text == "🛒 Shop")
 async def shop_menu(message: types.Message):
-    tmp = await message.answer("⏳ _Loading..._", parse_mode="Markdown")
     telegram_id = str(message.from_user.id)
     async with AsyncSessionLocal() as session:
         user_repo = UserRepository(session)
         settings_repo = SettingsRepository(session)
         user = await user_repo.get_or_create(telegram_id, message.from_user.username)
         currency = user.preferred_currency or "USD"
-        price_credits = await settings_repo.get("price_credits_10") or "500"
-        price_monthly = await settings_repo.get("price_premium_monthly") or "2000"
-        price_yearly = await settings_repo.get("price_premium_yearly") or "18000"
+        base_credits = float(await settings_repo.get("price_credits_10") or "5")
+        base_weekly = float(await settings_repo.get("price_premium_weekly") or "7")
+        base_monthly = float(await settings_repo.get("price_premium_monthly") or "20")
+        base_yearly = float(await settings_repo.get("price_premium_yearly") or "180")
+        
+        from utils.currency_helper import convert_currency
+        price_credits = await convert_currency(base_credits, currency)
+        price_weekly = await convert_currency(base_weekly, currency)
+        price_monthly = await convert_currency(base_monthly, currency)
+        price_yearly = await convert_currency(base_yearly, currency)
+        
         from utils.fmt import pill_tier
         tier = pill_tier(user.is_premium)
 
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text="🪙 Buy Credits (10)", callback_data="buy:credits")],
+        [types.InlineKeyboardButton(text="⚡ Weekly Premium", callback_data="buy:weekly")],
         [types.InlineKeyboardButton(text="⭐ Monthly Premium", callback_data="buy:monthly")],
         [types.InlineKeyboardButton(text="👑 Yearly Premium", callback_data="buy:yearly")],
         [types.InlineKeyboardButton(text="📜 My Transactions", callback_data="my_transactions")],
     ])
-    await tmp.delete()
     await message.answer(
-        shop_menu_text(tier, user.credits or 0, currency, price_credits, price_monthly, price_yearly),
+        shop_menu_text(tier, user.credits or 0, currency, price_credits, price_weekly, price_monthly, price_yearly),
         reply_markup=kb, parse_mode="Markdown"
     )
 

@@ -22,13 +22,11 @@ from bot.states.alert_states import AlertStates
 
 @router.message(F.text == "🔔 Alerts")
 async def alerts_menu(message: types.Message, state: FSMContext):
-    tmp = await message.answer("⏳ _Loading..._", parse_mode="Markdown")
     await state.clear()
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text="➕ New Alert", callback_data="add_alert")],
         [types.InlineKeyboardButton(text="📋 My Alerts", callback_data="view_alerts")],
     ])
-    await tmp.delete()
     await message.answer(
         section("🔔", "Alert Manager", "Monitor any asset. Get notified the instant your target is hit."),
         reply_markup=kb, parse_mode="Markdown"

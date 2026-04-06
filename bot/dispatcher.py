@@ -4,7 +4,6 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from config import settings
 
 # 1. Initialize Bot & Dispatcher
-# Bot Token will be loaded from settings (via .env)
 bot = Bot(token=settings.telegram_token)
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)

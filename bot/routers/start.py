@@ -23,7 +23,6 @@ class SettingsStates(StatesGroup):
 @router.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     """Handle /start command. Registers user and shows dynamic welcome text."""
-    tmp = await message.answer("⏳ _Loading..._", parse_mode="Markdown")
     await state.clear()
 
     telegram_id = str(message.from_user.id)
@@ -44,7 +43,6 @@ async def cmd_start(message: types.Message, state: FSMContext):
     else:
         welcome_text = f"👋 Hi {message.from_user.first_name}!\n\n{welcome_text}"
 
-    await tmp.delete()
     await message.answer(welcome_text, reply_markup=get_main_menu(), parse_mode="Markdown")
     logger.info(f"User {telegram_id} ({username}) started the bot.")
 
@@ -53,7 +51,6 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 @router.message(F.text == "⚙️ Settings")
 async def settings_menu(message: types.Message, state: FSMContext):
-    tmp = await message.answer("⏳ _Loading..._", parse_mode="Markdown")
     await state.clear()
     telegram_id = str(message.from_user.id)
     async with AsyncSessionLocal() as session:
@@ -70,7 +67,6 @@ async def settings_menu(message: types.Message, state: FSMContext):
         [types.InlineKeyboardButton(text="🪙 My Credits & Status", callback_data="my_balance")],
         [types.InlineKeyboardButton(text="📜 Transaction History", callback_data="my_transactions")],
     ])
-    await tmp.delete()
     await message.answer(
         f"⚙️ *Settings*\n\nTier: {tier}\nCurrency: `{currency}`\nTimezone: `{tz}`",
         reply_markup=kb,
@@ -86,15 +82,16 @@ async def prompt_timezone(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(SettingsStates.waiting_for_timezone)
 
     examples = (
-        "`WAT` · `GMT` · `CAT` · `EAT` · `IST` · `GST`\n"
-        "`Africa/Lagos` · `Europe/London` · `Asia/Dubai`\n"
-        "`New York` · `Lagos` · `London` · `Dubai` · `Nairobi`"
+        "🌍 *Africa*\n`WAT` · `CAT` · `EAT` · `Africa/Lagos`\n\n"
+        "🇪🇺 *Europe*\n`GMT` · `BST` · `Europe/London`\n\n"
+        "🗽 *Americas*\n`EST` · `PST` · `America/New_York`\n\n"
+        "🕌 *Middle East & Asia*\n`GST` · `IST` · `Asia/Dubai`"
     )
     await callback.message.edit_text(
         "🕐 *Set Your Timezone*\n\n"
-        "Send your timezone — you can use:\n\n"
+        "Reply with your timezone. Here are some examples:\n\n"
         f"{examples}\n\n"
-        "_Alert times will show in your local time._",
+        "_Alert times will automatically convert to your local time._",
         parse_mode="Markdown"
     )
 

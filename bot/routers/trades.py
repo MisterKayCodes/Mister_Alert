@@ -13,11 +13,9 @@ router = Router()
 
 @router.message(F.text == "📈 Trades")
 async def trades_menu(message: types.Message):
-    tmp = await message.answer("⏳ _Loading..._", parse_mode="Markdown")
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text="📋 View Open Trades", callback_data="view_trades")],
     ])
-    await tmp.delete()
     await message.answer(
         section("📈", "Trade Portfolio", "Track and manage your active positions."),
         reply_markup=kb, parse_mode="Markdown"

@@ -13,13 +13,11 @@ logger = logging.getLogger(__name__)
 
 @router.message(F.text == "🧮 Calculators")
 async def calculators_menu(message: types.Message, state: FSMContext):
-    tmp = await message.answer("⏳ _Loading..._", parse_mode="Markdown")
     await state.clear()
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text="📐 Position Sizer", callback_data="calc_pos_size")],
         [types.InlineKeyboardButton(text="⚖️ Risk / Reward", callback_data="calc_rr")],
     ])
-    await tmp.delete()
     await message.answer(
         section("🧮", "Trading Strategist", "Professional calculators to plan every trade."),
         reply_markup=kb, parse_mode="Markdown"
