@@ -7,6 +7,7 @@ def get_main_menu():
             [KeyboardButton(text="🔔 Alerts"), KeyboardButton(text="📈 Trades")],
             [KeyboardButton(text="🧮 Calculators"), KeyboardButton(text="📜 History")],
             [KeyboardButton(text="🛒 Shop"), KeyboardButton(text="⚙️ Settings")],
+            [KeyboardButton(text="💬 Support")],
         ],
         resize_keyboard=True,
         input_field_placeholder="Select an option"

@@ -13,9 +13,10 @@ from .middlewares.throttle import ThrottleMiddleware
 
 # 2. Main Router Setup (Will be populated in next steps)
 def setup_routers():
-    from .routers import start, alerts, trades, calculators, admin, history, shop
+    from .routers import start, alerts, trades, calculators, admin, history, shop, support
     
     dp.include_router(admin.router)   # admin first — highest priority
+    dp.include_router(support.router) # support high priority too
     dp.include_router(start.router)
     dp.include_router(alerts.router)
     dp.include_router(trades.router)

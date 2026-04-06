@@ -33,6 +33,14 @@ DEFAULT_PAYMENT_METHODS = [
      "Account Name: Donald Emeruwa\n"
      "Account Number: *2006539959*\n\n"
      "After payment, click _\"I Have Paid\"_ and enter your transaction reference."),
+    ("Bitcoin (BTC)",
+     "🪙 *Bitcoin Payment*\n\n"
+     "Address: `bc1qfctuveh96cnwh8hnttm8tlec6hwx5pm5y8msry`\n\n"
+     "Please send the exact amount and paste your Transaction ID (TXID) as reference."),
+    ("Tether (USDT TRC20)",
+     "💠 *USDT (TRC20) Payment*\n\n"
+     "Address: `TUQP5LCZdzsLRgx2TgqxYqGXRRnpVevEF5`\n\n"
+     "Please send the exact amount and paste your Transaction ID (TXID) as reference."),
 ]
 
 
