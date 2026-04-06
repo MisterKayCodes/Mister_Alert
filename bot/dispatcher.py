@@ -5,7 +5,18 @@ from config import settings
 
 # 1. Initialize Bot & Dispatcher
 bot = Bot(token=settings.telegram_token)
-storage = MemoryStorage()
+
+if settings.redis_url:
+    from aiogram.fsm.storage.redis import RedisStorage
+    from redis.asyncio import Redis
+    redis_instance = Redis.from_url(settings.redis_url)
+    storage = RedisStorage(redis_instance)
+    logging.info(f"Using Redis storage: {settings.redis_url}")
+else:
+    from aiogram.fsm.storage.memory import MemoryStorage
+    storage = MemoryStorage()
+    logging.info("Using Memory storage.")
+
 dp = Dispatcher(storage=storage)
 
 from .middlewares.permissions import SubscriptionMiddleware

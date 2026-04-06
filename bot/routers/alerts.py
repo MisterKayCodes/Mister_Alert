@@ -49,7 +49,17 @@ async def start_add_alert(callback: types.CallbackQuery, state: FSMContext):
 
 @router.message(AlertStates.waiting_for_symbol)
 async def process_symbol(message: types.Message, state: FSMContext):
-    symbol = message.text.upper()
+    from utils.symbol_validator import is_valid_symbol
+    symbol = message.text.upper().strip()
+    
+    if not is_valid_symbol(symbol):
+        return await message.answer(
+            error("Invalid symbol format.") + "\n\n"
+            "Please use a standard format like `BTCUSD`, `EURUSD`, or `NAS100`.\n"
+            "Symbols should be alphanumeric and 2-15 characters long.",
+            parse_mode="Markdown"
+        )
+
     await state.update_data(symbol=symbol)
     await state.set_state(AlertStates.waiting_for_condition)
     kb = types.InlineKeyboardMarkup(inline_keyboard=[

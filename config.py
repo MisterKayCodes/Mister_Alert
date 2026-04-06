@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     twelve_data_api_key: str = "your_twelve_data_key"
     polling_interval: int = 60
     admin_ids: List[int] = []
+    redis_url: Optional[str] = None
 
     @field_validator("admin_ids", mode="before")
     @classmethod

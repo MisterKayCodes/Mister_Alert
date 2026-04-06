@@ -80,20 +80,34 @@ async def process_pos_risk(message: types.Message, state: FSMContext):
     try:
         risk_usd = float(message.text)
         data = await state.get_data()
+        
+        # 1. 'Wrong Side' SL Validation
+        entry = data["entry"]
+        sl = data["sl"]
+        # Determine if it's likely a Long or Short based on SL position
+        is_long = sl < entry
+        
         result = get_position_size(
-            pair=data["pair"], entry=data["entry"],
-            sl=data["sl"], risk_usd=risk_usd
+            pair=data["pair"], entry=entry,
+            sl=sl, risk_usd=risk_usd
         )
+        
+        warning_icon = "⚠️" if result["warning"] else "✅"
         body = "\n".join([
             row("📌", "Pair", data["pair"]),
-            row("💵", "Risk Amount", "$" + str(risk_usd)),
+            row("💵", "Risk Amount", "$" + f"{risk_usd:,.2f}"),
             row("📏", "Distance", str(result["pips"]) + " pips"),
-            row("💰", "Lot Size", str(result["lots"]) + " lots"),
-            "",
-            "_Always manage your risk properly!_",
+            row("💰", "Lot Size", f"`{result['lots']}` lots"),
+            ""
         ])
+        
+        if result["warning"]:
+            body += f"\n*⚡️ Warning:* {result['warning']}\n"
+        
+        body += "\n_Always manage your risk properly!_"
+
         await message.answer(
-            success("Position Size Calculated") + "\n" + DIVIDER + "\n" + body,
+            f"{warning_icon} *Position Size Calculated*\n" + DIVIDER + "\n" + body,
             parse_mode="Markdown"
         )
         await state.clear()
@@ -174,11 +188,35 @@ async def process_rr_tp(message: types.Message, state: FSMContext):
     try:
         tp = float(message.text)
         data = await state.get_data()
+        
+        # 1. 'Careless Trader' Check: SL/TP on the wrong side
+        pos = data["position"]
+        entry = data["entry"]
+        sl = data["sl"]
+        
+        if pos == "LONG":
+            if sl >= entry:
+                return await message.answer(error("Stop Loss must be BELOW entry for a LONG."), parse_mode="Markdown")
+            if tp <= entry:
+                return await message.answer(error("Take Profit must be ABOVE entry for a LONG."), parse_mode="Markdown")
+        else: # SHORT
+            if sl <= entry:
+                return await message.answer(error("Stop Loss must be ABOVE entry for a SHORT."), parse_mode="Markdown")
+            if tp >= entry:
+                return await message.answer(error("Take Profit must be BELOW entry for a SHORT."), parse_mode="Markdown")
+
         result = calculate_risk_reward(
-            pair=data["pair"], position=data["position"],
-            entry_price=data["entry"], stop_loss=data["sl"], take_profit=tp
+            pair=data["pair"], position=pos,
+            entry_price=entry, stop_loss=sl, take_profit=tp
         )
-        await message.answer(rr_report(data["pair"], data["position"], result), parse_mode="Markdown")
+        
+        # Check for unusually low R:R
+        rr_val = float(result["risk_reward_ratio"])
+        report = rr_report(data["pair"], data["position"], result)
+        if rr_val < 1.0:
+            report += "\n\n⚠️ *Warning:* Your Risk is higher than your Reward! (Bad R:R)"
+            
+        await message.answer(report, parse_mode="Markdown")
         await state.clear()
     except (ValueError, ZeroDivisionError) as e:
         await message.answer(error("Calculation error: " + str(e) + ". Starting over."), parse_mode="Markdown")

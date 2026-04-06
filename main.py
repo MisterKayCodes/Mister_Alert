@@ -57,19 +57,25 @@ async def main():
 
     # 4. Initialize & Start PriceService (Provider Layer)
     price_service = PriceService()
+
+    # 5. Initialize & Start SubscriptionService (Revenue Protection Layer)
+    from services.subscription_service import SubscriptionService
+    sub_service = SubscriptionService()
     
-    # 5. Connect all components and run concurrently
+    # 6. Connect all components and run concurrently
     logger.info("🧠 Nervous System, Brain, and Eyes connected.")
     
     try:
-        # Run Bot Polling and Price Polling concurrently
+        # Run Bot Polling, Price Polling, and Subscription Checks concurrently
         await asyncio.gather(
             start_bot(),          # Telegram Interface (Long Polling)
-            price_service.start() # Price Provider (Background Loop)
+            price_service.start(), # Price Provider (Background Loop)
+            sub_service.start()    # Subscription Monitor (Background Loop)
         )
     except (KeyboardInterrupt, SystemExit):
         logger.warning("Shutting down...")
         await price_service.stop()
+        await sub_service.stop()
     except Exception as e:
         logger.exception(f"Critical system failure: {e}")
     finally:

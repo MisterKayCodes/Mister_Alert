@@ -1,5 +1,5 @@
-
 aiogram==3.4.1
+redis==5.0.1
 
 pydantic==2.5.2
 pydantic-settings==2.2.1
