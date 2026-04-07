@@ -49,7 +49,9 @@ If you want to run this yourself:
 
 ## Contributing
 
-If you want to help make Mister Alert better, keep the code clean, follow the layering rules, and most importantly, keep it simple.
+If you want to help make Mister Alert better, please check out our documentation first. We have strict guidelines on architecture and code quality to keep the system robust and scalable.
+
+You can find the full system documentation and our internal rulebook in the [docs](docs/) directory. Please read these before submitting pull requests to ensure your changes align with the project goals.
 
 ## License
 

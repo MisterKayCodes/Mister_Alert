@@ -15,13 +15,12 @@ logger = logging.getLogger(__name__)
 
 @router.message(F.text == "📜 History")
 async def history_menu(message: types.Message):
-    kb = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text="📊 Performance Stats", callback_data="stats_performance")],
-        [types.InlineKeyboardButton(text="📜 Last 10 Trades", callback_data="stats_history")],
-    ])
     await message.answer(
-        section("📜", "Trade Historian", "Analyze your past performance and trading edge."),
-        reply_markup=kb, parse_mode="Markdown"
+        section("📜", "Trade Historian", 
+                "Analyze your past performance and trading edge.\n\n"
+                "🚧 *Coming Soon*\n"
+                "We are finishing the analytics engine to help you find your peak performance. Hang tight!"),
+        parse_mode="Markdown"
     )
 
 
