@@ -6,16 +6,22 @@ from config import settings
 # 1. Initialize Bot & Dispatcher
 bot = Bot(token=settings.telegram_token)
 
+storage = MemoryStorage()
 if settings.redis_url:
-    from aiogram.fsm.storage.redis import RedisStorage
-    from redis.asyncio import Redis
-    redis_instance = Redis.from_url(settings.redis_url)
-    storage = RedisStorage(redis_instance)
-    logging.info(f"Using Redis storage: {settings.redis_url}")
+    try:
+        from aiogram.fsm.storage.redis import RedisStorage
+        from redis.asyncio import Redis
+        import asyncio
+
+        redis_instance = Redis.from_url(settings.redis_url, socket_timeout=5)
+        storage = RedisStorage(redis_instance)
+        logging.info(f"Using Redis storage: {settings.redis_url}")
+    except ImportError:
+        logging.warning("Redis storage requested but 'redis' package not found. Falling back to Memory.")
+    except Exception as e:
+        logging.warning(f"Failed to initialize Redis ({e}). Falling back to Memory storage.")
 else:
-    from aiogram.fsm.storage.memory import MemoryStorage
-    storage = MemoryStorage()
-    logging.info("Using Memory storage.")
+    logging.info("Using Memory storage (no redis_url provided).")
 
 dp = Dispatcher(storage=storage)
 

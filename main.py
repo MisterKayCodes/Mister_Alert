@@ -2,6 +2,8 @@ import asyncio
 import logging
 import sys
 import socket
+import os
+import subprocess
 
 # MONKEYPATCH: Force Windows to use IPv4 globally. 
 # This bypasses the notorious 21-second IPv6 DNS timeout bug that freezes aiogram HTTP requests.
@@ -38,7 +40,49 @@ logger.add(sys.stdout, format="<green>{time:HH:mm:ss}</green> | <level>{level: <
 logger.add("logs/system.log", rotation="1 week", retention="1 month", level="INFO")
 logger.add("logs/error.log", rotation="1 week", retention="1 month", level="ERROR")
 
+def run_preflight_checks():
+    """
+    Ensures the codebase adheres to the Digital Constitution and 
+    Architectural standards before allowing the bot to boot.
+    """
+    logger.info("🔍 Running pre-flight architecture and constitution checks...")
+    
+    scripts_dir = os.path.join("app", "infrastructure", "checks")
+    checks = [
+        ("Architecture", "architecture_inspector.py"),
+        ("Constitution", "dev_constitution.py")
+    ]
+    
+    for name, script in checks:
+        script_path = os.path.join(scripts_dir, script)
+        if not os.path.exists(script_path):
+            logger.warning(f"⚠️ {name} check skipped: {script_path} not found.")
+            continue
+            
+        result = subprocess.run(
+            [sys.executable, script_path],
+            capture_output=True,
+            text=True
+        )
+        
+        if result.returncode != 0:
+            logger.error(f"❌ {name} Check Failed!")
+            print("\n" + "="*50)
+            print(f"VIOLATION DETECTED IN {script.upper()}")
+            print("="*50)
+            print(result.stdout)
+            print(result.stderr)
+            print("="*50 + "\n")
+            logger.critical("System boot aborted due to rule violations.")
+            sys.exit(1)
+            
+    logger.info("✅ Pre-flight checks passed. System is Senior-grade.")
+
+
 async def main():
+    # 0. Rule Enforcement (Fail Fast)
+    run_preflight_checks()
+    
     logger.info("🚀 Starting Mister Alert System...")
 
     # 1. Initialize Database Schema (Create missing tables)
