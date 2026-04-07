@@ -8,8 +8,8 @@ from typing import Optional
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.trades.tracker import TradeTracker
-from core.events import TakeProfitHitEvent, StopLossHitEvent
+from app.core.trades.tracker import TradeTracker
+from app.core.events import TakeProfitHitEvent, StopLossHitEvent
 
 @dataclass
 class MockTrade:

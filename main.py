@@ -13,11 +13,11 @@ socket.getaddrinfo = new_getaddrinfo
 
 from loguru import logger
 
-from services.price_service import PriceService
-from services.alert_manager import AlertManager
-from services.trade_manager import TradeManager
-from bot.dispatcher import start_bot, bot
-from bot.notification_handler import NotificationHandler
+from app.services.price_service import PriceService
+from app.services.alert_manager import AlertManager
+from app.services.trade_manager import TradeManager
+from app.bot.dispatcher import start_bot, bot
+from app.bot.notification_handler import NotificationHandler
 
 # 1. Structured Logging Setup
 class InterceptHandler(logging.Handler):
@@ -42,12 +42,12 @@ async def main():
     logger.info("🚀 Starting Mister Alert System...")
 
     # 1. Initialize Database Schema (Create missing tables)
-    from data.database import init_models
+    from app.data.database import init_models
     await init_models()
     logger.info("✅ Database schema initialized.")
 
     # 2. Seed default settings & payment methods (idempotent — safe on every restart)
-    from data.seeder import seed_defaults
+    from app.data.seeder import seed_defaults
     await seed_defaults()
     logger.info("✅ Database seeded.")
 
@@ -66,7 +66,7 @@ async def main():
     price_service = PriceService()
 
     # 5. Initialize & Start SubscriptionService (Revenue Protection Layer)
-    from services.subscription_service import SubscriptionService
+    from app.services.subscription_service import SubscriptionService
     sub_service = SubscriptionService()
     
     # 6. Connect all components and run concurrently
@@ -92,4 +92,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        pass
+        logger.info("Bot manually stopped by user.")

@@ -7,9 +7,9 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-from bot.dispatcher import setup_routers, dp
-from bot.notification_handler import NotificationHandler
-from bot.dispatcher import bot
+from app.bot.dispatcher import setup_routers, dp
+from app.bot.notification_handler import NotificationHandler
+from app.bot.dispatcher import bot
 
 async def test_bot_setup():
     print("Testing Bot Setup & Router Registration...")

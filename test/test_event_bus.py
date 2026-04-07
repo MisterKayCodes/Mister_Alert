@@ -1,7 +1,7 @@
 import pytest
 import asyncio
-from services.event_bus import event_bus, EventBus
-from core.events import PriceUpdateEvent
+from app.services.event_bus import event_bus, EventBus
+from app.core.events import PriceUpdateEvent
 
 @pytest.fixture
 def isolated_bus():

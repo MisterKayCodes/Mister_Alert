@@ -1,0 +1,11 @@
+﻿[!] .\app\core\events.py: Illegal import: dataclasses
+[!] .\app\core\calculators\position_size.py: Spaghetti Warning: Deep nesting detected (depth 4). Refactor to reduce cyclomatic complexity.
+[!] .\app\core\trades\analytics.py: Illegal import: app.data
+[!] .\app\bot\routers\alerts.py: File too long (252 > 200)
+[!] .\app\bot\routers\calculators.py: File too long (223 > 200)
+[!] .\app\bot\routers\shop.py: File too long (244 > 200)
+[!] .\app\data\repository.py: File too long (264 > 200)
+[!] .\app\services\price_service.py: Illegal import: sqlalchemy
+[!] .\app\services\subscription_service.py: Illegal import: sqlalchemy
+[!] .\app\services\subscription_service.py: Illegal import: app.bot
+[!] .\app\services\price_providers\binance.py: Spaghetti Warning: Deep nesting detected (depth 4). Refactor to reduce cyclomatic complexity.

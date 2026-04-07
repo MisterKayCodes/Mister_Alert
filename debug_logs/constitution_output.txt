@@ -1,0 +1,15 @@
+﻿--- Running Digital Constitution Scan on: C:\Kaycris\Mister_Alert ---
+
+File: app\bot\routers\admin\dashboard.py
+  [X] Rule 3 Violation: Mixing 'Mouth' (aiogram) and 'Memory' (sqlalchemy) in one file.
+
+File: app\bot\routers\admin\economy.py
+  [X] Rule 3 Violation: Mixing 'Mouth' (aiogram) and 'Memory' (sqlalchemy) in one file.
+
+File: app\bot\routers\admin\users.py
+  [X] Rule 3 Violation: Mixing 'Mouth' (aiogram) and 'Memory' (sqlalchemy) in one file.
+
+File: app\core\csv\analytics.py
+  [X] Rule 8 Violation: Deep nesting detected (Depth 5 > 4). Refactor for 'Boring Code'.
+
+CONSTITUTION FAILED: 4 violation(s) found.

@@ -8,8 +8,8 @@ from typing import Optional
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.alerts.engine import AlertEngine
-from core.events import AlertTriggeredEvent
+from app.core.alerts.engine import AlertEngine
+from app.core.events import AlertTriggeredEvent
 
 @dataclass
 class MockAlert:

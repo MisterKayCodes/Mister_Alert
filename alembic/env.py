@@ -12,7 +12,7 @@ from alembic import context
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import your Base metadata here
-from data.models import Base  # Adjust if your Base is elsewhere
+from app.data.models import Base  # Adjust if your Base is elsewhere
 
 # Alembic Config object, provides access to .ini file values
 config = context.config

@@ -1,0 +1,37 @@
+﻿--- Running Digital Constitution Scan on: C:\Kaycris\Mister_Alert ---
+
+File: main.py
+  [X] Rule 12 Violation: Empty 'except' block (Silent Crash) at line 94.
+
+File: bot\middlewares\rate_limit.py
+  [X] Rule 12 Violation: Empty 'except' block (Silent Crash) at line 51.
+
+File: bot\middlewares\throttle.py
+  [X] Rule 12 Violation: Empty 'except' block (Silent Crash) at line 47.
+
+File: bot\routers\admin.py
+  [X] Rule 3 Violation: Mega-file detected (631 lines > 300).
+  [X] Rule 3 Violation: Mixing 'Mouth' (aiogram) and 'Memory' (sqlalchemy) in one file.
+
+File: bot\routers\alerts.py
+  [X] Rule 3 Violation: Mixing 'Mouth' (aiogram) and 'Memory' (sqlalchemy) in one file.
+
+File: bot\routers\shop.py
+  [X] Rule 3 Violation: Mixing 'Mouth' (aiogram) and 'Memory' (sqlalchemy) in one file.
+
+File: bot\routers\start.py
+  [X] Rule 3 Violation: Mixing 'Mouth' (aiogram) and 'Memory' (sqlalchemy) in one file.
+
+File: core\csv\analytics.py
+  [X] Rule 8 Violation: Deep nesting detected (Depth 5 > 4). Refactor for 'Boring Code'.
+
+File: core\trades\tracker.py
+  [X] Rule 8 Violation: Deep nesting detected (Depth 5 > 4). Refactor for 'Boring Code'.
+
+File: services\subscription_service.py
+  [X] Rule 12 Violation: Empty 'except' block (Silent Crash) at line 35.
+
+File: utils\timezone_helper.py
+  [X] Rule 12 Violation: Empty 'except' block (Silent Crash) at line 107.
+
+CONSTITUTION FAILED: 12 violation(s) found.

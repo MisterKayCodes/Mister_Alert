@@ -1,6 +1,6 @@
 # test/run_position_size.py
 
-from core.calculators.position_size import get_position_size
+from app.core.calculators.position_size import get_position_size
 
 def main():
     print("="*30)

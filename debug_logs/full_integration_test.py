@@ -4,13 +4,13 @@ import asyncio
 from datetime import datetime
 from decimal import Decimal
 
-from data.database import engine, AsyncSessionLocal
-from data.models import Base
-from data.repository import UserRepository, AlertRepository, TradeRepository
-from core.events import PriceUpdateEvent, AlertTriggeredEvent, TakeProfitHitEvent
-from services.event_bus import event_bus
-from services.alert_manager import AlertManager
-from services.trade_manager import TradeManager
+from app.data.database import engine, AsyncSessionLocal
+from app.data.models import Base
+from app.data.repository import UserRepository, AlertRepository, TradeRepository
+from app.core.events import PriceUpdateEvent, AlertTriggeredEvent, TakeProfitHitEvent
+from app.services.event_bus import event_bus
+from app.services.alert_manager import AlertManager
+from app.services.trade_manager import TradeManager
 
 async def setup_db():
     print("🛠️ Resetting Test Database Meta...")

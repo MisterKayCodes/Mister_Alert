@@ -8,12 +8,12 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-from data.database import engine, AsyncSessionLocal
-from data.models import Base
-from data.repository import UserRepository, AlertRepository, TradeRepository
-from core.events import PriceUpdateEvent
-from services.event_bus import event_bus
-from services.price_service import PriceService
+from app.data.database import engine, AsyncSessionLocal
+from app.data.models import Base
+from app.data.repositories import UserRepository, AlertRepository, TradeRepository
+from app.core.events import PriceUpdateEvent
+from app.services.event_bus import event_bus
+from app.services.price_service import PriceService
 
 async def setup_db():
     print("Resetting Test Database Meta...")

@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 from decimal import Decimal
-from core.alerts.engine import AlertEngine
+from app.core.alerts.engine import AlertEngine
 from dataclasses import dataclass
 
 @dataclass

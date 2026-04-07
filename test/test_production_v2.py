@@ -1,7 +1,7 @@
 import unittest
-from core.calculators.position_size import get_position_size
-from core.calculators.risk_reward import calculate_risk_reward
-from utils.symbol_validator import is_valid_symbol
+from app.core.calculators.position_size import get_position_size
+from app.core.calculators.risk_reward import calculate_risk_reward
+from app.utils.symbol_validator import is_valid_symbol
 
 class TestProductionHardening(unittest.TestCase):
 

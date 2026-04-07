@@ -1,4 +1,4 @@
-from core.calculators.risk_reward import calculate_risk_reward
+from app.core.calculators.risk_reward import calculate_risk_reward
 
 def main():
     print("="*30)
