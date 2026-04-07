@@ -4,6 +4,15 @@ from typing import Callable, Type, Dict, List, Any
 
 
 class EventBus:
+    """
+    In-Memory Event Bus.
+    
+    WARNING:
+    This bus is completely ephemeral and held in memory.
+    If the bot restarts or crashes, all unpublished or processing
+    events will be permanently dropped. State should be synced 
+    to the database rapidly to prevent data loss.
+    """
     def __init__(self):
         # event_type -> list of handlers
         self._subscribers: Dict[Type, List[Callable]] = defaultdict(list)

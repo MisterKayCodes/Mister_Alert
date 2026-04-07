@@ -1,6 +1,7 @@
 import httpx
 import logging
 from typing import List, Dict
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from .base import PriceProvider
 from config import settings
 
@@ -16,6 +17,11 @@ class TwelveDataProvider(PriceProvider):
     def __init__(self):
         self.api_key = settings.twelve_data_api_key
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type(httpx.RequestError)
+    )
     async def get_prices(self, symbols: List[str]) -> Dict[str, float]:
         if not symbols or not self.api_key or self.api_key == "your_twelve_data_key":
             logger.warning(f"TwelveData: Symbols: {symbols}, API Key: {self.api_key}")
@@ -26,37 +32,30 @@ class TwelveDataProvider(PriceProvider):
         results = {}
 
         async with httpx.AsyncClient() as client:
-            try:
-                response = await client.get(
-                    self.BASE_URL, 
-                    params={"symbol": symbol_str, "apikey": self.api_key}
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    
-                    # Log the structure to help debug if needed
-                    logger.debug(f"TwelveData raw output: {data}")
+            response = await client.get(
+                self.BASE_URL, 
+                params={"symbol": symbol_str, "apikey": self.api_key}
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            # Log the structure to help debug if needed
+            logger.debug(f"TwelveData raw output: {data}")
 
-                    # Handle single symbol response
-                    if len(symbols) == 1:
-                        symbol = symbols[0].upper()
-                        if "price" in data:
-                            results[symbols[0]] = float(data["price"])
-                        elif "code" in data and data["code"] != 200:
-                            logger.error(f"TwelveData Error: {data.get('message')}")
-                    # Handle multiple symbol response
-                    else:
-                        for symbol, info in data.items():
-                            if isinstance(info, dict) and "price" in info:
-                                results[symbol] = float(info["price"])
-                            elif isinstance(info, dict) and "code" in info and info["code"] != 200:
-                                logger.warning(f"TwelveData: Symbol {symbol} fail: {info.get('message')}")
-                                
-                else:
-                    logger.error(f"TwelveData Request Failed: Status {response.status_code}")
-                    
-            except Exception as e:
-                logger.error(f"TwelveData Exception: {e}")
-                pass
+            # Handle single symbol response
+            if len(symbols) == 1:
+                symbol = symbols[0].upper()
+                if "price" in data:
+                    results[symbols[0]] = float(data["price"])
+                elif "code" in data and data["code"] != 200:
+                    logger.error(f"TwelveData Error: {data.get('message')}")
+            # Handle multiple symbol response
+            else:
+                for symbol, info in data.items():
+                    if isinstance(info, dict) and "price" in info:
+                        results[symbol] = float(info["price"])
+                    elif isinstance(info, dict) and "code" in info and info["code"] != 200:
+                        logger.warning(f"TwelveData: Symbol {symbol} fail: {info.get('message')}")
 
         return results

@@ -21,6 +21,8 @@ dp = Dispatcher(storage=storage)
 
 from .middlewares.permissions import SubscriptionMiddleware
 from .middlewares.throttle import ThrottleMiddleware
+from .middlewares.idempotency import IdempotencyMiddleware
+from .middlewares.rate_limit import RateLimitMiddleware
 
 # 2. Main Router Setup (Will be populated in next steps)
 def setup_routers():
@@ -35,12 +37,21 @@ def setup_routers():
     dp.include_router(history.router)
     dp.include_router(shop.router)
     
-    # ThrottleMiddleware FIRST — drops duplicate taps before any DB call
+    # 1. Idempotency (Outer-most layer for the update event)
+    idemp = IdempotencyMiddleware()
+    dp.update.middleware(idemp)
+
+    # 2. Rate Limit
+    rate_limiter = RateLimitMiddleware(limit=5, window_seconds=5)
+    dp.message.middleware(rate_limiter)
+    dp.callback_query.middleware(rate_limiter)
+
+    # 3. ThrottleMiddleware — drops duplicate taps before any DB call
     throttle = ThrottleMiddleware()
     dp.message.middleware(throttle)
     dp.callback_query.middleware(throttle)
 
-    # SubscriptionMiddleware SECOND — gates alert creation
+    # 4. SubscriptionMiddleware — gates alert creation
     dp.message.middleware(SubscriptionMiddleware())
     dp.callback_query.middleware(SubscriptionMiddleware())
 

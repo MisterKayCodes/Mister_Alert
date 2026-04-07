@@ -2,6 +2,7 @@ import httpx
 import logging
 import asyncio
 from typing import List, Dict
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from .base import PriceProvider
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,11 @@ class CoinGeckoProvider(PriceProvider):
         "MATIC": "polygon",
     }
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type(httpx.RequestError)
+    )
     async def get_prices(self, symbols: List[str]) -> Dict[str, float]:
         if not symbols:
             return {}
@@ -46,22 +52,18 @@ class CoinGeckoProvider(PriceProvider):
         if not cg_ids:
             return {}
 
-        try:
-            async with httpx.AsyncClient() as client:
-                params = {
-                    "ids": ",".join(cg_ids),
-                    "vs_currencies": "usd"
-                }
-                response = await client.get(self.BASE_URL, params=params, timeout=10.0)
-                if response.status_code == 200:
-                    data = response.json()
-                    for s, cg_id in symbol_to_id.items():
-                        if cg_id in data:
-                            results[s] = float(data[cg_id]["usd"])
-                    logger.info(f"CoinGecko (Backup): Fetched {len(results)} symbols.")
-                else:
-                    logger.warning(f"CoinGecko: Failed (Status {response.status_code})")
-        except Exception as e:
-            logger.error(f"CoinGecko Error: {e}")
+        async with httpx.AsyncClient() as client:
+            params = {
+                "ids": ",".join(cg_ids),
+                "vs_currencies": "usd"
+            }
+            response = await client.get(self.BASE_URL, params=params, timeout=10.0)
+            response.raise_for_status()
+            
+            data = response.json()
+            for s, cg_id in symbol_to_id.items():
+                if cg_id in data:
+                    results[s] = float(data[cg_id]["usd"])
+            logger.info(f"CoinGecko (Backup): Fetched {len(results)} symbols.")
             
         return results

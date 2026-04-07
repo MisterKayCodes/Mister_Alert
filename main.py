@@ -35,6 +35,8 @@ class InterceptHandler(logging.Handler):
 logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO, force=True)
 logger.remove()
 logger.add(sys.stdout, format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan> - <level>{message}</level>")
+logger.add("logs/system.log", rotation="1 week", retention="1 month", level="INFO")
+logger.add("logs/error.log", rotation="1 week", retention="1 month", level="ERROR")
 
 async def main():
     logger.info("🚀 Starting Mister Alert System...")
