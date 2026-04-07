@@ -4,6 +4,7 @@ from typing import List, Dict
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from .base import PriceProvider
 from config import settings
+from utils.fmt import format_forex_symbol
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +28,15 @@ class TwelveDataProvider(PriceProvider):
             logger.warning(f"TwelveData: Symbols: {symbols}, API Key: {self.api_key}")
             return {}
 
-        # Twelve Data supports multiple symbols in one request
-        symbol_str = ",".join(symbols).upper()
+        # TwelveData expects forex pairs as EUR/USD, but users often provide EURUSD.
+        formatted_symbols = []
+        twelve_to_orig = {}
+        for sym in symbols:
+            formatted = format_forex_symbol(sym)
+            formatted_symbols.append(formatted)
+            twelve_to_orig[formatted] = sym
+
+        symbol_str = ",".join(formatted_symbols)
         results = {}
 
         async with httpx.AsyncClient() as client:
@@ -39,23 +47,23 @@ class TwelveDataProvider(PriceProvider):
             response.raise_for_status()
             
             data = response.json()
-            
-            # Log the structure to help debug if needed
             logger.debug(f"TwelveData raw output: {data}")
 
             # Handle single symbol response
-            if len(symbols) == 1:
-                symbol = symbols[0].upper()
+            if len(formatted_symbols) == 1:
+                fsym = formatted_symbols[0]
+                orig_sym = twelve_to_orig[fsym]
                 if "price" in data:
-                    results[symbols[0]] = float(data["price"])
+                    results[orig_sym] = float(data["price"])
                 elif "code" in data and data["code"] != 200:
                     logger.error(f"TwelveData Error: {data.get('message')}")
             # Handle multiple symbol response
             else:
-                for symbol, info in data.items():
+                for fsym, info in data.items():
+                    orig_sym = twelve_to_orig.get(fsym, fsym)
                     if isinstance(info, dict) and "price" in info:
-                        results[symbol] = float(info["price"])
+                        results[orig_sym] = float(info["price"])
                     elif isinstance(info, dict) and "code" in info and info["code"] != 200:
-                        logger.warning(f"TwelveData: Symbol {symbol} fail: {info.get('message')}")
+                        logger.warning(f"TwelveData: Symbol {fsym} fail: {info.get('message')}")
 
         return results

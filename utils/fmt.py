@@ -199,3 +199,15 @@ def system_stats(total_users: int, premium: int, alerts: int, pending_txs: int) 
         row("⏳", "Pending Payments", pending_txs),
     ])
     return section("📊", "System Stats", body)
+
+
+def format_forex_symbol(sym: str) -> str:
+    """
+    Normalizes a ticker symbol. If it's a 6-character forex/metal symbol 
+    missing a slash (e.g., EURUSD, XAUUSD), it intelligently injects one (EUR/USD).
+    Otherwise, it returns the symbol as-is.
+    """
+    s = sym.upper().replace("-", "").replace(" ", "")
+    if len(s) == 6 and "/" not in s:
+        return f"{s[:3]}/{s[3:]}"
+    return s
