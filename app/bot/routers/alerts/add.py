@@ -18,10 +18,16 @@ logger = logging.getLogger(__name__)
 async def start_add_alert(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer("⏳")
     await state.set_state(AlertStates.waiting_for_symbol)
+    
+    kb = types.InlineKeyboardMarkup(inline_keyboard=[
+        [types.InlineKeyboardButton(text="❌ Cancel", callback_data="user_home")]
+    ])
+    
     await callback.message.edit_text(
         f"{header('🔤', 'Add Alert — Step 1 of 3')}\n{DIVIDER}\n"
         "Enter the *symbol* you want to monitor:\n\n"
         "_Examples: `BTCUSD`, `EURUSD`, `XAUUSD`_",
+        reply_markup=kb,
         parse_mode="Markdown"
     )
 
@@ -38,7 +44,8 @@ async def process_symbol(message: types.Message, state: FSMContext):
     await state.set_state(AlertStates.waiting_for_condition)
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text="📈 Price Goes Above", callback_data="above"),
-         types.InlineKeyboardButton(text="📉 Price Goes Below", callback_data="below")]
+         types.InlineKeyboardButton(text="📉 Price Goes Below", callback_data="below")],
+        [types.InlineKeyboardButton(text="❌ Cancel", callback_data="user_home")]
     ])
     await message.answer(
         f"{header('🔀', 'Add Alert — Step 2 of 3')}\n{DIVIDER}\n"
@@ -53,9 +60,15 @@ async def process_condition(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(condition=condition)
     await state.set_state(AlertStates.waiting_for_price)
     label = "Above 📈" if condition == "above" else "Below 📉"
+    
+    kb = types.InlineKeyboardMarkup(inline_keyboard=[
+        [types.InlineKeyboardButton(text="❌ Cancel", callback_data="user_home")]
+    ])
+    
     await callback.message.edit_text(
         f"{header('💰', 'Add Alert — Step 3 of 3')}\n{DIVIDER}\n"
         f"Direction: *{label}*\n\nEnter the *target price*:",
+        reply_markup=kb,
         parse_mode="Markdown"
     )
 

@@ -42,3 +42,12 @@ class SupportTicketRepository:
             select(SupportTicket).where(SupportTicket.user_id == user_id).order_by(SupportTicket.created_at.desc())
         )
         return result.scalars().all()
+
+    async def delete(self, ticket_id: int) -> bool:
+        """Permanently delete a ticket from the database."""
+        ticket = await self.get_by_id(ticket_id)
+        if ticket:
+            await self.session.delete(ticket)
+            await self.session.commit()
+            return True
+        return False

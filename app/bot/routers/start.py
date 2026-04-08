@@ -66,12 +66,21 @@ async def settings_menu(message: types.Message, state: FSMContext):
         [types.InlineKeyboardButton(text=f"🕐 Timezone: {tz}", callback_data="set_timezone")],
         [types.InlineKeyboardButton(text="🪙 My Credits & Status", callback_data="my_balance")],
         [types.InlineKeyboardButton(text="📜 Transaction History", callback_data="my_transactions")],
+        [types.InlineKeyboardButton(text="↩️ Back to Menu", callback_data="user_home")],
     ])
     await message.answer(
         f"⚙️ *Settings*\n\nTier: {tier}\nCurrency: `{currency}`\nTimezone: `{tz}`",
         reply_markup=kb,
         parse_mode="Markdown"
     )
+
+@router.callback_query(F.data == "user_home")
+async def user_home(callback: types.CallbackQuery, state: FSMContext):
+    """Universal handler to return to the main menu and clear state."""
+    await state.clear()
+    from app.bot.keyboards.reply import get_main_menu
+    await callback.message.answer("🏠 *Main Menu*", reply_markup=get_main_menu(), parse_mode="Markdown")
+    await callback.answer()
 
 
 # ── Timezone setting ──────────────────────────────────────────────────────────
@@ -87,11 +96,16 @@ async def prompt_timezone(callback: types.CallbackQuery, state: FSMContext):
         "🗽 *Americas*\n`EST` · `PST` · `America/New_York`\n\n"
         "🕌 *Middle East & Asia*\n`GST` · `IST` · `Asia/Dubai`"
     )
+    kb = types.InlineKeyboardMarkup(inline_keyboard=[
+        [types.InlineKeyboardButton(text="❌ Cancel", callback_data="user_home")]
+    ])
+    
     await callback.message.edit_text(
         "🕐 *Set Your Timezone*\n\n"
         "Reply with your timezone. Here are some examples:\n\n"
         f"{examples}\n\n"
         "_Alert times will automatically convert to your local time._",
+        reply_markup=kb,
         parse_mode="Markdown"
     )
 
@@ -153,6 +167,13 @@ async def my_balance(callback: types.CallbackQuery):
         f"_1 Month Premium = {price_monthly} {currency}_"
     )
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text="🛒 Go to Shop", callback_data="go_shop")]
+        [types.InlineKeyboardButton(text="🛒 Go to Shop", callback_data="go_shop")],
+        [types.InlineKeyboardButton(text="↩️ Back to Settings", callback_data="user_settings")]
     ])
     await callback.message.edit_text(text, reply_markup=kb, parse_mode="Markdown")
+
+@router.callback_query(F.data == "user_settings")
+async def user_settings_callback(callback: types.CallbackQuery, state: FSMContext):
+    """Callback version of settings_menu to allow 'Back' navigation."""
+    await settings_menu(callback.message, state)
+    await callback.answer()

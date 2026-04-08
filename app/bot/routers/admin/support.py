@@ -61,12 +61,15 @@ async def admin_view_ticket(callback: types.CallbackQuery):
         user = await user_repo.get_by_id(ticket.user_id)
         username = f"(@{user.username})" if user and user.username else ""
 
+    # Fix: Remove Markdown formatting from raw message to prevent crashes
+    safe_msg = ticket.message.replace("*", "").replace("_", "").replace("`", "")
+    
     text = (
         f"🎫 *Ticket #{ticket.id}*\n"
         f"👤 From: {user.full_name if user else 'Unknown'} {username}\n"
         f"🆔 User ID: `{user.telegram_id if user else 'N/A'}`\n"
         f"📅 Date: {ticket.created_at.strftime('%Y-%m-%d %H:%M')}\n\n"
-        f"💬 *Message:*\n{ticket.message}"
+        f"💬 *Message:*\n{safe_msg}"
     )
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text="💬 Reply", callback_data=f"admin:reply_ticket:{ticket.id}")],
@@ -81,7 +84,11 @@ async def admin_start_reply(callback: types.CallbackQuery, state: FSMContext):
     ticket_id = int(callback.data.split(":")[2])
     await state.update_data(reply_ticket_id=ticket_id)
     await state.set_state(AdminSupportStates.awaiting_reply_text)
-    await callback.message.answer("📝 Type your reply to the user:")
+    
+    kb = types.InlineKeyboardMarkup(inline_keyboard=[
+        [types.InlineKeyboardButton(text="❌ Cancel", callback_data="admin:support")]
+    ])
+    await callback.message.answer("📝 Type your reply to the user:", reply_markup=kb)
     await callback.answer()
 
 @router.message(AdminSupportStates.awaiting_reply_text)
@@ -89,23 +96,33 @@ async def admin_send_reply(message: types.Message, state: FSMContext, bot: Bot):
     data = await state.get_data()
     ticket_id = data["reply_ticket_id"]
     reply_text = message.text.strip()
+    
     async with AsyncSessionLocal() as session:
         support_repo = SupportTicketRepository(session)
         user_repo = UserRepository(session)
-        ticket = await support_repo.add_reply(ticket_id, reply_text)
+        
+        # 0. Get ticket info before deleting
+        ticket = await support_repo.get_by_id(ticket_id)
         if not ticket:
             await message.answer("❌ Error: Ticket not found.")
             await state.clear()
             return
         user = await user_repo.get_by_id(ticket.user_id)
-    try:
-        user_msg = (
-            "👩‍💻 *Support Reply*\n\n"
-            f"Your message: _{ticket.message}_\n\n"
-            f"✅ *Response:*\n{reply_text}"
-        )
-        await bot.send_message(user.telegram_id, user_msg, parse_mode="Markdown")
-        await message.answer(f"✅ Reply sent to user {user.telegram_id}!")
-    except Exception as e:
-        await message.answer(f"⚠️ Reply saved in DB but failed to send via Telegram: {e}")
+        
+        try:
+            # 1. Send admin's reply to the user
+            user_msg = (
+                "👩‍💻 *Support Reply*\n\n"
+                f"Your message: _{ticket.message}_\n\n"
+                f"✅ *Response:*\n{reply_text}"
+            )
+            await bot.send_message(user.telegram_id, user_msg, parse_mode="Markdown")
+            
+            # 2. DELETE the ticket (Self-Cleaning)
+            await support_repo.delete(ticket_id)
+            
+            await message.answer(f"✅ Reply sent to user and ticket #{ticket_id} resolved (deleted).")
+        except Exception as e:
+            await message.answer(f"❌ Failed to send reply via Telegram: {e}")
+            
     await state.clear()
