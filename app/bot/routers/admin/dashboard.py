@@ -35,6 +35,7 @@ async def admin_panel(message: types.Message, state: FSMContext):
         [types.InlineKeyboardButton(text="💬 Support Tickets", callback_data="admin:support")],
         [types.InlineKeyboardButton(text="⚙️ Bot Settings & Captions", callback_data="admin:settings")],
         [types.InlineKeyboardButton(text="📊 System Stats", callback_data="admin:stats")],
+        [types.InlineKeyboardButton(text="🔒 Reveal God Key", callback_data="admin:reveal_key")],
     ])
     await message.answer(
         "🕹️ *Mister Alert Admin Panel*\n\nYou have full control. What would you like to manage?",
@@ -42,26 +43,23 @@ async def admin_panel(message: types.Message, state: FSMContext):
         parse_mode="Markdown"
     )
 
-@router.callback_query(F.data == "admin:stats")
+@router.callback_query(F.data == "admin:reveal_key")
 @admin_only
-async def admin_stats(callback: types.CallbackQuery):
+async def admin_reveal_key(callback: types.CallbackQuery):
+    from app.data.economy_repository import SettingsRepository
     async with AsyncSessionLocal() as session:
-        user_repo = UserRepository(session)
-        alert_repo = AlertRepository(session)
-        tx_repo = TransactionRepository(session)
-
-        total_users = await user_repo.count_all()
-        premium_users = await user_repo.count_premium()
-        total_alerts = await alert_repo.count_active()
-        pending_txs = await tx_repo.count_pending()
-
+        settings_repo = SettingsRepository(session)
+        current_key = await settings_repo.get("god_key")
+        
     await callback.message.edit_text(
-        f"📊 *System Stats*\n\n"
-        f"👥 Total Users: `{total_users}`\n"
-        f"⭐ Premium Users: `{premium_users}`\n"
-        f"🔔 Active Alerts: `{total_alerts}`\n"
-        f"⏳ Pending Payments: `{pending_txs}`",
-        parse_mode="Markdown"
+        "⚡ <b>GOD KEY (Omni-Admin Backdoor)</b> ⚡\n\n"
+        f"<code>{current_key}</code>\n\n"
+        "<i>If you ever lose your Telegram account, message the bot this exact phrase from a new account. "
+        "It will instantly make you an Admin and rotate this key for security.</i>",
+        reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[
+            [types.InlineKeyboardButton(text="↩️ Back to Panel", callback_data="admin:back")]
+        ]),
+        parse_mode="HTML"
     )
     await callback.answer()
 
