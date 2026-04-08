@@ -72,7 +72,7 @@ async def admin_view_ticket(callback: types.CallbackQuery):
             username = f"(@{user.username})" if user and user.username else ""
 
         safe_msg = html.escape(ticket.message)
-        user_name = html.escape(user.full_name) if user else "Unknown"
+        user_name = "User" if user else "Unknown"
         
         text = (
             f"🎫 <b>Ticket #{ticket.id}</b>\n"
