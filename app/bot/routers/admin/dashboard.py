@@ -66,5 +66,20 @@ async def admin_reveal_key(callback: types.CallbackQuery):
 @router.callback_query(F.data == "admin:back")
 @admin_only
 async def admin_back(callback: types.CallbackQuery, state: FSMContext):
-    await admin_panel(callback.message, state)
+    await state.clear()
+    kb = types.InlineKeyboardMarkup(inline_keyboard=[
+        [types.InlineKeyboardButton(text="👥 User Management", callback_data="admin:users")],
+        [types.InlineKeyboardButton(text="🎟️ Mint Vouchers", callback_data="admin:mint_vouchers")],
+        [types.InlineKeyboardButton(text="💳 Payment Methods", callback_data="admin:payments")],
+        [types.InlineKeyboardButton(text="⏳ Pending Transactions", callback_data="admin:transactions")],
+        [types.InlineKeyboardButton(text="💬 Support Tickets", callback_data="admin:support")],
+        [types.InlineKeyboardButton(text="⚙️ Bot Settings & Captions", callback_data="admin:settings")],
+        [types.InlineKeyboardButton(text="📊 System Stats", callback_data="admin:stats")],
+        [types.InlineKeyboardButton(text="🔒 Reveal God Key", callback_data="admin:reveal_key")],
+    ])
+    await callback.message.edit_text(
+        "🕹️ *Mister Alert Admin Panel*\n\nYou have full control. What would you like to manage?",
+        reply_markup=kb,
+        parse_mode="Markdown"
+    )
     await callback.answer()
