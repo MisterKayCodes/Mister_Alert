@@ -7,8 +7,7 @@ DATABASE_URL = settings.database_url
 engine: AsyncEngine = create_async_engine(
     DATABASE_URL,
     echo=False,
-    future=True,
-    connect_args={"timeout": 60} if "asyncpg" in DATABASE_URL else {}
+    future=True
 )
 
 AsyncSessionLocal = sessionmaker(
