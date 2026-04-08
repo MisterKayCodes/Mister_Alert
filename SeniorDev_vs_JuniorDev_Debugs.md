@@ -75,4 +75,37 @@ Whenever a bot goes silent, follow this psychological checklist:
 A Junior Dev sees a crash as a **Failure of the Code**. 
 A Senior Dev sees a crash as a **Misalignment of the Environment**.
 
-Most of the time, the code is fine. It's the "Ghosts" from previous versions that are causing the noise. Kill the ghosts, and the code will sing. 👻🔫
+---
+
+## 💇‍♂️ Maintenance: The Code Haircut
+
+Just like your hair, code needs regular "trims" to stay healthy. 
+
+### The Junior Mistake: "The Hoarding Habit" 📦
+*   **The logic**: "I spent hours writing that SQLite code. I'll just leave it there 'just in case' we need it later."
+*   **The Result**: The codebase becomes a "Frankenstein's Monster." You have two nervous systems (SQLite and Postgres). Eventually, a bug will hide in the old code that you aren't even using anymore.
+
+### The Senior Wisdom: "Delete with Confidence" ✂️
+*   **The logic**: "We have Git history. If we ever need that code again, we can go back in time. Today, I only want the code that makes the bot work *now*."
+*   **The Benefit**: A smaller, cleaner codebase is faster to read, harder to break, and easier to deploy.
+
+### 🩹 Case Study: Resolving the VPS Stumble
+After the "Haircut," the startup errors often vanish. Why? Because the bot is no longer confused about which "Brain" to use. By removing the old `.db` file and the `connect_args` logic, we forced the system to be 100% focused on its new PostgreSQL life.
+
+---
+
+## 🪤 The Import Trap: Why Absolute Paths Save Your Life
+
+During the VPS deployment of April 2026, we encountered a mysterious `ModuleNotFoundError: No module named 'data'`.
+
+### The Junior Error: "Locality Bias" 🏠
+*   **The logic**: "I'm in the `app/bot/routers` folder. The `data` folder is close by. I'll just say `from data import x` and it should work."
+*   **The Result**: Local environments might be "forgiving," but a production VPS expects strictness. When the bot is launched from the root folder, it can't find `data` because `data` is hidden inside `app`. 
+
+### The Senior Resolve: "The Absolute Shield" 🛡️
+*   **The logic**: "Never assume the system knows where you are. Use the full address: `from app.data import x`."
+*   **The Innovation**: We updated the `architecture_inspector.py` to be a **Shield**. 
+
+Now, if a developer tries to use a "naked" import like `from data`, the bot will **refuse to boot**. It gives an error message: `Incorrect relative import: 'data'. Use 'app.data' instead.`
+
+**Senior Lesson**: Don't just fix a bug; **build a machine** that makes the bug impossible to repeat. 🛰️🦾💰

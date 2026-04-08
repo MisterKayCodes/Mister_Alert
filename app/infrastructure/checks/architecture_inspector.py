@@ -7,36 +7,53 @@ DEFAULT_FORBIDDEN_IMPORTS = {
     "services": ["aiogram", "bot", "sqlalchemy"]
 }
 
+INTERNAL_LAYERS = ["data", "services", "bot", "utils", "infrastructure"]
+
 def check_file_integrity(file_path, folder_name, rules, max_lines=200):
     with open(file_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
         if len(lines) > max_lines: return [f"File too long ({len(lines)} > {max_lines})"]
-        try: tree = ast.parse("".join(lines))
+        try: 
+            content = "".join(lines)
+            tree = ast.parse(content)
         except Exception as e: return [f"Syntax Error: {e}"]
     
     errors = []
-    forbidden = rules.get(folder_name, [])
     
-    # 1. Check for illegal imports
+    # 1. Check for absolute import enforcement (app. prefix)
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            modules = []
+            if isinstance(node, ast.ImportFrom):
+                if node.module: modules.append(node.module)
+            else:
+                modules.extend([n.name for n in node.names])
+            
+            for mod in modules:
+                first_part = mod.split('.')[0]
+                if first_part in INTERNAL_LAYERS:
+                    errors.append(f"Incorrect relative import: '{mod}'. Use 'app.{mod}' instead.")
+
+    # 2. Check for illegal layer-to-layer imports
+    # Checks both 'layer' and 'app.layer' variants
+    forbidden = rules.get(folder_name, [])
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             names = []
             if isinstance(node, ast.ImportFrom):
-                if node.module:
-                    names.append(node.module)
+                if node.module: names.append(node.module)
             else:
                 names.extend([n.name for n in node.names])
             
             for name in names:
                 if name:
-                    # Fix: Ensure it's the package itself or a sub-package (e.g. 'data' or 'data.models')
-                    # and not just a name starting with it (e.g. 'dataclasses')
                     for f in forbidden:
-                        if name == f or name.startswith(f + "."):
-                            errors.append(f"Illegal import: {name}")
+                        if name == f or name.startswith(f + ".") or \
+                           name == f"app.{f}" or name.startswith(f"app.{f}."):
+                            errors.append(f"Illegal layer-to-layer import: {name}")
                             break
 
-    # 2. Check for Deep Nesting (Cyclomatic Complexity)
+    # 3. Check for Deep Nesting (Cyclomatic Complexity)
     class NestingVisitor(ast.NodeVisitor):
         def __init__(self):
             self.max_depth = 0
@@ -66,7 +83,6 @@ def scan_organism(base_dir=".", max_lines=200):
     has_issues = False
     app_path = os.path.join(base_dir, "app")
     if not os.path.exists(app_path):
-        # Fallback for when running from within the app folder or tests
         app_path = base_dir if os.path.basename(os.path.abspath(base_dir)) == "app" else None
         if not app_path: return True 
 
@@ -77,13 +93,6 @@ def scan_organism(base_dir=".", max_lines=200):
             for file in files:
                 if file.endswith(".py") and file != "__init__.py":
                     errs = check_file_integrity(os.path.join(root, file), layer, DEFAULT_FORBIDDEN_IMPORTS, max_lines)
-                    # Also check for 'app.' prefixed versions of forbidden imports
-                    with open(os.path.join(root, file), "r", encoding="utf-8") as f:
-                        file_content = f.read()
-                        for forbidden in DEFAULT_FORBIDDEN_IMPORTS[layer]:
-                            if f"from app.{forbidden}" in file_content or f"import app.{forbidden}" in file_content:
-                                errs.append(f"Illegal import: app.{forbidden}")
-                    
                     for e in errs: 
                         print(f"[!] {os.path.join(root, file)}: {e}")
                         has_issues = True

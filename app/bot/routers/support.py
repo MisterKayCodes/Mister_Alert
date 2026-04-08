@@ -28,9 +28,9 @@ async def forward_to_admins(message: types.Message, state: FSMContext, bot: Bot)
     user_id = message.from_user.id
     text = message.text.strip()
     
-    from data.database import AsyncSessionLocal
-    from data.repository import UserRepository
-    from data.support_repository import SupportTicketRepository
+    from app.data.database import AsyncSessionLocal
+    from app.data.repositories import UserRepository
+    from app.data.support_repository import SupportTicketRepository
 
     async with AsyncSessionLocal() as session:
         user_repo = UserRepository(session)
