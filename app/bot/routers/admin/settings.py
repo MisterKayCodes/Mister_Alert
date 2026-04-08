@@ -20,15 +20,63 @@ async def admin_settings(callback: types.CallbackQuery):
         settings_repo = SettingsRepository(session)
         all_settings = await settings_repo.get_all()
 
-    lines = [f"• `{s.key}` = `{s.value}`" for s in all_settings]
-    text = "⚙️ *Bot Settings*\n\n" + "\n".join(lines) if lines else "No settings found."
+    is_direct_enabled = "False"
+    vendor_link = "Not Set"
+    
+    for s in all_settings:
+        if s.key == "enable_direct_payments": is_direct_enabled = s.value
+        elif s.key == "vendor_telegram_link": vendor_link = s.value
+
+    status = "🟢 ON" if is_direct_enabled == "True" else "🔴 OFF"
+    text = (
+        "⚙️ *Bot Settings & Economy Controls*\n\n"
+        f"🏦 *Direct Bank/Crypto Payments*: {status}\n"
+        f"🧑‍💼 *Current Vendor Link*: `{vendor_link}`\n\n"
+        "_Toggle payments below. If OFF, users must buy vouchers from your Vendor._" 
+    )
 
     buttons = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text="✏️ Edit a Setting", callback_data="admin:setting_edit")],
+        [types.InlineKeyboardButton(text=f"🔀 Toggle Direct Payments", callback_data="admin:toggle_direct")],
+        [types.InlineKeyboardButton(text="🧑‍💼 Set Vendor username/link", callback_data="admin:set_vendor")],
+        [types.InlineKeyboardButton(text="✏️ Edit Advanced Setting", callback_data="admin:setting_edit")],
         [types.InlineKeyboardButton(text="↩️ Back", callback_data="admin:back")],
     ])
     await callback.message.edit_text(text, reply_markup=buttons, parse_mode="Markdown")
     await callback.answer()
+
+@router.callback_query(F.data == "admin:toggle_direct")
+@admin_only
+async def admin_toggle_direct(callback: types.CallbackQuery):
+    async with AsyncSessionLocal() as session:
+        settings_repo = SettingsRepository(session)
+        current = await settings_repo.get("enable_direct_payments")
+        new_val = "False" if current == "True" else "True"
+        await settings_repo.set("enable_direct_payments", new_val)
+    # Reload menu
+    await admin_settings(callback)
+
+class AdminVendorState(StatesGroup):
+    awaiting_vendor_link = State()
+
+@router.callback_query(F.data == "admin:set_vendor")
+@admin_only
+async def admin_set_vendor(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(AdminVendorState.awaiting_vendor_link)
+    await callback.message.edit_text(
+        "🔗 *Set Vendor Link*\n\nEnter the full Telegram link for the voucher vendor (e.g., `https://t.me/Kaycris`):",
+        parse_mode="Markdown",
+        reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="❌ Cancel", callback_data="admin:settings")]])
+    )
+    await callback.answer()
+
+@router.message(AdminVendorState.awaiting_vendor_link)
+async def admin_save_vendor(message: types.Message, state: FSMContext):
+    link = message.text.strip()
+    async with AsyncSessionLocal() as session:
+        settings_repo = SettingsRepository(session)
+        await settings_repo.set("vendor_telegram_link", link)
+    await message.answer(f"✅ Vendor link updated to: {link}\n\nType /admin to return to panel.")
+    await state.clear()
 
 @router.callback_query(F.data == "admin:setting_edit")
 @admin_only

@@ -57,12 +57,16 @@ async def process_code_redemption(message: types.Message, state: FSMContext):
         # Code was valid and marked as used. Now apply the reward!
         reward = result["reward_type"]
         
-        if reward == "premium_1_month":
-            # Add 30 days of premium
+        if reward.startswith("premium_"):
             now = datetime.now(timezone.utc)
             current_expiry = user.premium_until if user.premium_until and user.premium_until > now else now
-            new_expiry = current_expiry + timedelta(days=30)
             
+            if reward == "premium_1_week": days_to_add = 7
+            elif reward == "premium_1_month": days_to_add = 30
+            elif reward == "premium_1_year": days_to_add = 365
+            else: days_to_add = 0
+            
+            new_expiry = current_expiry + timedelta(days=days_to_add)
             user.is_premium = True
             user.premium_until = new_expiry
             success_msg = f"🎉 <b>Premium Activated!</b>\n\nYou now have Premium access until <code>{new_expiry.strftime('%Y-%m-%d')}</code>."

@@ -27,15 +27,24 @@ def admin_only(func):
 @admin_only
 async def admin_panel(message: types.Message, state: FSMContext):
     await state.clear()
+    # Organize buttons 2-per-row for optimal mobile viewing
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text="👥 User Management", callback_data="admin:users")],
-        [types.InlineKeyboardButton(text="🎟️ Mint Vouchers", callback_data="admin:mint_vouchers")],
-        [types.InlineKeyboardButton(text="💳 Payment Methods", callback_data="admin:payments")],
-        [types.InlineKeyboardButton(text="⏳ Pending Transactions", callback_data="admin:transactions")],
-        [types.InlineKeyboardButton(text="💬 Support Tickets", callback_data="admin:support")],
-        [types.InlineKeyboardButton(text="⚙️ Bot Settings & Captions", callback_data="admin:settings")],
-        [types.InlineKeyboardButton(text="📊 System Stats", callback_data="admin:stats")],
-        [types.InlineKeyboardButton(text="🔒 Reveal God Key", callback_data="admin:reveal_key")],
+        [
+            types.InlineKeyboardButton(text="👥 Users", callback_data="admin:users"),
+            types.InlineKeyboardButton(text="🎟️ Mint Vouchers", callback_data="admin:mint_vouchers")
+        ],
+        [
+            types.InlineKeyboardButton(text="💳 Payment Methods", callback_data="admin:payments"),
+            types.InlineKeyboardButton(text="⏳ Transactions", callback_data="admin:transactions")
+        ],
+        [
+            types.InlineKeyboardButton(text="💬 Tickets", callback_data="admin:support"),
+            types.InlineKeyboardButton(text="⚙️ Settings", callback_data="admin:settings")
+        ],
+        [
+            types.InlineKeyboardButton(text="📊 Stats", callback_data="admin:stats"),
+            types.InlineKeyboardButton(text="🔒 God Key", callback_data="admin:reveal_key")
+        ],
     ])
     await message.answer(
         "🕹️ *Mister Alert Admin Panel*\n\nYou have full control. What would you like to manage?",
@@ -68,14 +77,22 @@ async def admin_reveal_key(callback: types.CallbackQuery):
 async def admin_back(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text="👥 User Management", callback_data="admin:users")],
-        [types.InlineKeyboardButton(text="🎟️ Mint Vouchers", callback_data="admin:mint_vouchers")],
-        [types.InlineKeyboardButton(text="💳 Payment Methods", callback_data="admin:payments")],
-        [types.InlineKeyboardButton(text="⏳ Pending Transactions", callback_data="admin:transactions")],
-        [types.InlineKeyboardButton(text="💬 Support Tickets", callback_data="admin:support")],
-        [types.InlineKeyboardButton(text="⚙️ Bot Settings & Captions", callback_data="admin:settings")],
-        [types.InlineKeyboardButton(text="📊 System Stats", callback_data="admin:stats")],
-        [types.InlineKeyboardButton(text="🔒 Reveal God Key", callback_data="admin:reveal_key")],
+        [
+            types.InlineKeyboardButton(text="👥 Users", callback_data="admin:users"),
+            types.InlineKeyboardButton(text="🎟️ Mint Vouchers", callback_data="admin:mint_vouchers")
+        ],
+        [
+            types.InlineKeyboardButton(text="💳 Payment Methods", callback_data="admin:payments"),
+            types.InlineKeyboardButton(text="⏳ Transactions", callback_data="admin:transactions")
+        ],
+        [
+            types.InlineKeyboardButton(text="💬 Tickets", callback_data="admin:support"),
+            types.InlineKeyboardButton(text="⚙️ Settings", callback_data="admin:settings")
+        ],
+        [
+            types.InlineKeyboardButton(text="📊 Stats", callback_data="admin:stats"),
+            types.InlineKeyboardButton(text="🔒 God Key", callback_data="admin:reveal_key")
+        ],
     ])
     await callback.message.edit_text(
         "🕹️ *Mister Alert Admin Panel*\n\nYou have full control. What would you like to manage?",
