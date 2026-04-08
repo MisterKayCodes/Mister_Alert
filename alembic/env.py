@@ -7,6 +7,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
+from config import settings
 
 # Add project root to sys.path for imports to work correctly
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -26,7 +27,7 @@ target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode (no DBAPI needed)."""
-    url = config.get_main_option("sqlalchemy.url")
+    url = settings.database_url
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -54,7 +55,7 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     """Run migrations in 'online' mode using AsyncEngine."""
     connectable = create_async_engine(
-        config.get_main_option("sqlalchemy.url"),
+        settings.database_url,
         poolclass=pool.NullPool,
         future=True,
     )
