@@ -119,3 +119,18 @@ class SupportTicket(Base):
     replied_at = Column(DateTime(timezone=True), nullable=True)
 
     user = relationship("User", back_populates="support_tickets")
+
+
+class Voucher(Base):
+    """Secure activation keys for the Voucher Economy (Premium/Credits)."""
+    __tablename__ = "vouchers"
+
+    id = Column(Integer, primary_key=True)
+    code = Column(String, unique=True, index=True, nullable=False)
+    reward_type = Column(String, nullable=False) # e.g., 'premium_1_month', 'credits_500'
+    is_used = Column(Boolean, default=False)
+    used_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    used_at = Column(DateTime(timezone=True), nullable=True)
+
+    user = relationship("User")

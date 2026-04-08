@@ -29,6 +29,7 @@ async def admin_panel(message: types.Message, state: FSMContext):
     await state.clear()
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text="👥 User Management", callback_data="admin:users")],
+        [types.InlineKeyboardButton(text="🎟️ Mint Vouchers", callback_data="admin:mint_vouchers")],
         [types.InlineKeyboardButton(text="💳 Payment Methods", callback_data="admin:payments")],
         [types.InlineKeyboardButton(text="⏳ Pending Transactions", callback_data="admin:transactions")],
         [types.InlineKeyboardButton(text="💬 Support Tickets", callback_data="admin:support")],
