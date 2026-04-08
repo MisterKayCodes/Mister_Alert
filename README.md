@@ -1,58 +1,49 @@
-# Mister Alert
+# Mister Alert: The Vanguard Architecture 🚀
 
-Mister Alert is a personal trading assistant that does the boring stuff for you. It watches the markets (crypto and forex), waits for your specific targets, and pokes you on Telegram the second something interesting happens. No more staring at charts until your eyes bleed.
+**Mister Alert** is an institutional-grade, highly-available trading companion designed to monitor forex and crypto markets, alert users to critical price movements, and operate an autonomous internal economy.
 
-## How it works
+This repository is built using "Senior Developer" patterns. It is self-healing, structurally immune to junior coding mistakes via its "Digital Constitution", and heavily fortified for production on a VPS.
 
-The system is built like a human to keep things simple:
+## 🏗️ The Architectural Layout
 
-1. **The Senses (Services)**: This layer is out in the world fetching data. It talks to Binance for crypto and Twelve Data for forex.
-2. **The Brain (Core)**: This is where the thinking happens. It doesn't care about databases or Telegram buttons. It just knows if a price hit a target or if a position size is too risky.
-3. **The Memory (Data)**: This is the long-term storage. It remembers your alerts, your trades, and your settings using a modular repository system.
-4. **The Mouth (Bot/UI)**: This is how it talks to you. It handles the Telegram interface, menus, and notifications.
+The system is modeled after human anatomy to enforce strict separation of concerns:
 
-Everything is connected by a nervous system (the EventBus), so the Brain can tell the Mouth to shout "Bitcoin just hit sixty thousand!" without either layer needing to know how the other works.
+1. **The Senses (Services Layer)**: Handles all external connections. It talks to Binance/Twelve Data for prices and manages subscription limits. It passes data inwards but knows nothing of the UI.
+2. **The Brain (Core Layer)**: Pure business logic. It handles risk calculation algorithms, target processing, and pure data math.
+3. **The Memory (Data Layer)**: The `AsyncSession` database controllers. Repositories handle all PostgreSQL interactions safely and cleanly.
+4. **The Mouth (Bot Layer)**: The `aiogram` Telegram interface. It handles user interactions, parsing commands, and displaying menus.
 
-## What it can do for you
+**The Nervous System**: Connecting all of this is the `EventBus`, allowing deep core processes to trigger Telegram messages without actually importing the telegram bot module.
 
-Position sizing is hard. Watching 10 pairs at once is harder. Mister Alert handles:
+## 💰 The Voucher Economy (Monetization)
 
-- **Price Alerts**: Set it and forget it. You get a notification when the price crosses your line.
-- **Trade Monitoring**: It tracks your active trades and alerts you when your take-profit or stop-loss is hit.
-- **The Strategist**: A built-in suite of calculators to help you figure out exactly how much to risk on a trade so you don't blow your account.
-- **Analytics**: You can import your trading history via CSV and get a clear picture of how you are actually performing. No guessing.
+For maximum security and to eliminate trust issues with unknown users, Mister Alert utilizes a **"Voucher Economy"**. 
+- Direct Bot payments (Bank/Crypto) are hidden by default via the `SettingsRepository`.
+- Users must click **"Redeem Activation Code"**. 
+- Admins act as **The Mint**. They sell codes externally (M-Pesa, Cash, Escrow) and use a private `/admin` dashboard to generate cryptographically secure, single-use keys (`PREM-XYZ12345`).
+- Once a code is redeemed, the DB marks it as "Burned", preventing double spends.
 
-## Why it's "Senior-Grade"
+## ⚡ High-Availability & Self-Healing
 
-We recently overhauled the entire project to make it modular and stable. 
+Mister Alert is designed to never require server reboots for operational changes:
+- **God Mode Backdoor**: If the primary admin loses their Telegram account, they do not need SSH access to regain control. By messaging the bot the encrypted `god_key` (stored in the DB), they are instantly elevated to Admin, and the key automatically regenerates to prevent replay attacks.
+- **Dynamic Vendor Pipes**: The official vendor link can be swapped out live from the Admin Dashboard.
+- **The Absolute Shield**: `architecture_inspector.py` runs on every boot. If any code imports are "messy" (e.g., using relative imports instead of `app.X`), the bot refuses to boot and logs the exact error. It acts as an automated Senior Dev code reviewer.
 
-- **Small Files**: No single file is a giant wall of messy code. Everything is under 200 lines.
-- **Clean Layers**: The part that calculates your risk doesn't know what a database is. The part that talks to Telegram doesn't know how to fetch prices. This makes it incredibly easy to fix bugs or add new features.
-- **Fast and Slow Lanes**: Built-in logic to prioritize premium users with faster price checks while keeping the standard experience smooth for everyone.
+## 📊 Analytics & Admin Intelligence
 
-## Quick Start
+The bot is embedded with a comprehensive `admin/stats.py` module. It tracks:
+- Total user growth and 7-day trailing metrics.
+- Active premium subscriptions.
+- Active trade and alert counts safely monitored without invading user privacy.
+- Capable of generating `mister_alert_users.csv` on the fly for marketing exports directly through Telegram.
 
-If you want to run this yourself:
+## 🛠️ Developer Quick Start
 
-1. **Install dependencies**: `pip install -r requirements.txt`
-2. **Setup your environment**: Create a `.env` file with your Telegram token and API keys (see `config.py` for what you'll need).
-3. **Initialize the database**: Use `alembic upgrade head` to set up your tables.
-4. **Boot it up**: Run `python main.py`.
+If you are an AI or Developer hired to work on this code, **respect the architecture**.
 
-## Project Layout
-
-- **app/bot**: The interface layer (routers, keyboards, and middlewares).
-- **app/core**: The logic layer (calculators, alert engines, and analytics).
-- **app/data**: The storage layer (repositories and database models).
-- **app/services**: The external layer (price providers and system events).
-- **test**: A suite of integration tests to make sure the "nervous system" is still healthy.
-
-## Contributing
-
-If you want to help make Mister Alert better, please check out our documentation first. We have strict guidelines on architecture and code quality to keep the system robust and scalable.
-
-You can find the full system documentation and our internal rulebook in the [docs](docs/) directory. Please read these before submitting pull requests to ensure your changes align with the project goals.
-
-## License
-
-This project is released under the MIT License. Use it, build on it, and go catch some pips.
+1. **Install Dependencies**: `pip install -r requirements.txt`
+2. **Setup PostgreSQL & Redis**: Essential for the FSM states and the Memory layer.
+3. **Database Migration**: `alembic upgrade head`
+4. **Testing Pipeline**: Run `pytest tests/` before pushing. Features like the Voucher Economy rely on CI/CD proofs before deploying.
+5. **Boot**: `python main.py`

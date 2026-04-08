@@ -3,8 +3,8 @@ from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from app.data.database import AsyncSessionLocal
+from app.data.economy_repository import PaymentMethodRepository, TransactionRepository, SettingsRepository
 from app.data.repositories import UserRepository
-from app.data.economy_repository import PaymentMethodRepository, TransactionRepository
 from app.utils.fmt import header, DIVIDER, row, success, error
 
 router = Router()
@@ -19,9 +19,28 @@ async def select_payment_method(callback: types.CallbackQuery, state: FSMContext
     await callback.answer("⏳")
     tx_type = callback.data.split(":")[1]
     await state.update_data(tx_type=tx_type)
+    
     async with AsyncSessionLocal() as session:
+        settings_repo = SettingsRepository(session)
+        is_direct_enabled = await settings_repo.get("enable_direct_payments")
+        
+        if is_direct_enabled == "False":
+            vendor_link = await settings_repo.get("vendor_telegram_link") or "the official vendor"
+            kb = types.InlineKeyboardMarkup(inline_keyboard=[
+                [types.InlineKeyboardButton(text="🎟️ Vendor Shop", url=vendor_link)],
+                [types.InlineKeyboardButton(text="↩️ Back to Bot", callback_data="user_home")]
+            ])
+            return await callback.message.edit_text(
+                "🚨 <b>Direct Deposits Disabled</b>\n\n"
+                "We now exclusively use the <b>Secure Activation Code</b> system.\n\n"
+                f"To purchase Credits or Premium, please tap the button below to message the official vendor and buy a Code.",
+                reply_markup=kb,
+                parse_mode="HTML"
+            )
+
         pm_repo = PaymentMethodRepository(session)
         methods = await pm_repo.get_all_active()
+        
     if not methods:
         return await callback.message.edit_text(error("No payment methods configured."), parse_mode="Markdown")
     buttons = [[types.InlineKeyboardButton(text=f"🏦 {m.name}", callback_data=f"pm:{m.id}")] for m in methods]
@@ -29,6 +48,7 @@ async def select_payment_method(callback: types.CallbackQuery, state: FSMContext
         header("💳", "Select Payment Method") + "\n" + DIVIDER + "\nChoose how you'd like to pay:",
         reply_markup=types.InlineKeyboardMarkup(inline_keyboard=buttons), parse_mode="Markdown"
     )
+
 
 @router.callback_query(F.data.startswith("pm:"))
 async def show_payment_details(callback: types.CallbackQuery, state: FSMContext):

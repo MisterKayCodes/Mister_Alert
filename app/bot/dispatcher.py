@@ -32,8 +32,8 @@ from .middlewares.rate_limit import RateLimitMiddleware
 
 # 2. Main Router Setup (Will be populated in next steps)
 def setup_routers():
-    from .routers import start, alerts, trades, calculators, history, shop, support
-    from .routers.admin import dashboard_router, users_router, economy_router, settings_router, support_router as admin_support_router, vouchers_router
+    from .routers import start, alerts, trades, calculators, history, shop, support, recovery
+    from .routers.admin import dashboard_router, users_router, economy_router, settings_router, support_router as admin_support_router, vouchers_router, stats_router
     
     dp.include_router(dashboard_router)
     dp.include_router(users_router)
@@ -41,6 +41,7 @@ def setup_routers():
     dp.include_router(settings_router)
     dp.include_router(admin_support_router)
     dp.include_router(vouchers_router)
+    dp.include_router(stats_router)
     dp.include_router(support.router) # support high priority too
     dp.include_router(start.router)
     dp.include_router(alerts.router)
@@ -48,6 +49,7 @@ def setup_routers():
     dp.include_router(calculators.router)
     dp.include_router(history.router)
     dp.include_router(shop.router)
+    dp.include_router(recovery.router) # God Mode fallback listener
     
     # 1. Idempotency (Outer-most layer for the update event)
     idemp = IdempotencyMiddleware()

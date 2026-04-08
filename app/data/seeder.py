@@ -24,6 +24,9 @@ DEFAULT_SETTINGS = [
     ("subscription_footer",
      "🚀 *Upgrade to Premium* — get real-time alerts & unlimited tracking!",
      "Footer shown on free-user notifications"),
+    ("enable_direct_payments", "False", "Set to True to show bank/crypto deposits. False hides them."),
+    ("vendor_telegram_link", "https://t.me/YourVendorHandleGoesHere", "Link to the human vendor selling Vouchers"),
+    ("god_key", "MISTER-ALERT-GOD-MODE-ACTIVATE", "The Omni-Admin recovery phrase"),
 ]
 
 DEFAULT_PAYMENT_METHODS = [
