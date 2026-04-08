@@ -2,11 +2,12 @@ import logging
 import csv
 import io
 from aiogram import Router, types, F
-from sqlalchemy import select, func, desc
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 
 from app.data.database import AsyncSessionLocal
-from app.data.models import User, Trade, Alert
+from app.data.repositories.user import UserRepository
+from app.data.repositories.trade import TradeRepository
+from app.data.repositories.alert import AlertRepository
 from .dashboard import admin_only
 
 router = Router()
@@ -19,23 +20,15 @@ async def admin_stats_dashboard(callback: types.CallbackQuery):
     await callback.answer("📊 Crunching data...", show_alert=False)
     
     async with AsyncSessionLocal() as session:
-        # 1. Total Users
-        total_users = await session.scalar(select(func.count()).select_from(User))
+        user_repo = UserRepository(session)
+        trade_repo = TradeRepository(session)
+        alert_repo = AlertRepository(session)
         
-        # 2. Premium Users
-        premium_users = await session.scalar(
-            select(func.count()).select_from(User).where(User.is_premium == True)
-        )
-        
-        # 3. New Users (Last 7 Days)
-        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
-        new_users = await session.scalar(
-            select(func.count()).select_from(User).where(User.created_at >= seven_days_ago)
-        )
-        
-        # 4. Total Active Alerts & Trades
-        total_alerts = await session.scalar(select(func.count()).select_from(Alert).where(Alert.is_active == True))
-        total_trades = await session.scalar(select(func.count()).select_from(Trade).where(Trade.is_closed == False))
+        total_users = await user_repo.count_all()
+        premium_users = await user_repo.count_premium()
+        new_users = await user_repo.count_recent(days=7)
+        total_alerts = await alert_repo.count_active()
+        total_trades = await trade_repo.count_active()
         
     text = (
         "📊 <b>Advanced System Analytics</b>\n\n"
@@ -62,10 +55,8 @@ async def admin_export_csv(callback: types.CallbackQuery):
     await callback.answer("Generating CSV...", show_alert=False)
     
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
-            select(User).order_by(desc(User.created_at))
-        )
-        users = result.scalars().all()
+        user_repo = UserRepository(session)
+        users = await user_repo.get_all_ordered()
         
     # Generate CSV in memory
     output = io.StringIO()

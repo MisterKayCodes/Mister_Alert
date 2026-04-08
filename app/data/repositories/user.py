@@ -66,6 +66,17 @@ class UserRepository:
         )
         return result.scalar() or 0
 
+    async def count_recent(self, days: int) -> int:
+        recent_cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        result = await self.session.execute(
+            select(func.count(User.id)).where(User.created_at >= recent_cutoff)
+        )
+        return result.scalar() or 0
+
+    async def get_all_ordered(self) -> list[User]:
+        result = await self.session.execute(select(User).order_by(User.created_at.desc()))
+        return list(result.scalars().all())
+
     async def get_expired_users(self) -> list[User]:
         from datetime import datetime, timezone
         now = datetime.now(timezone.utc)

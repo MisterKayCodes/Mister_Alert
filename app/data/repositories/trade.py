@@ -17,6 +17,10 @@ class TradeRepository:
         result = await self.session.execute(select(Trade).where(Trade.is_closed == False))
         return list(result.scalars().all())
 
+    async def count_active(self) -> int:
+        result = await self.session.execute(select(func.count(Trade.id)).where(Trade.is_closed == False))
+        return result.scalar() or 0
+
     async def update_trade_targets(self, trade_id: int, stop_loss: float | None, take_profit: float | None):
         await self.session.execute(
             update(Trade).where(Trade.id == trade_id)
