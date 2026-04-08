@@ -1,4 +1,5 @@
 import logging
+import html
 from aiogram import Router, types, F, Bot
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -19,11 +20,11 @@ async def support_request(message: types.Message, state: FSMContext):
         [types.InlineKeyboardButton(text="❌ Cancel", callback_data="cancel_support")]
     ])
     await message.answer(
-        "💬 *Contact Support*\n\n"
+        "💬 <b>Contact Support</b>\n\n"
         "Please send your message below. An admin will get back to you directly in this chat.\n\n"
-        "_Tip: Tap 'Cancel' below if you didn't mean to contact us._",
+        "<i>Tip: Tap 'Cancel' below if you didn't mean to contact us.</i>",
         reply_markup=kb,
-        parse_mode="Markdown"
+        parse_mode="HTML"
     )
 
 @router.callback_query(F.data == "cancel_support")
@@ -55,9 +56,12 @@ async def forward_to_admins(message: types.Message, state: FSMContext, bot: Bot)
         # 1. Save to Database
         ticket = await support_repo.create(user.id, text)
         
-        # 2. Prepare Admin Notification
-        user_info = f"👤 *Support Ticket #{ticket.id}*\nFrom: {message.from_user.full_name} (@{message.from_user.username})\nID: `{user_id}`\n"
-        forward_text = f"{user_info}\n💬 *Message:*\n{text}"
+        # 2. Prepare Admin Notification (Hardened with HTML)
+        user_full_name = html.escape(message.from_user.full_name)
+        safe_text = html.escape(text)
+        
+        user_info = f"👤 <b>Support Ticket #{ticket.id}</b>\nFrom: {user_full_name} (@{message.from_user.username})\nID: <code>{user_id}</code>\n"
+        forward_text = f"{user_info}\n💬 <b>Message:</b>\n{safe_text}"
         
         # 3. Add Reply Button for Admin
         kb = types.InlineKeyboardMarkup(inline_keyboard=[
@@ -70,7 +74,7 @@ async def forward_to_admins(message: types.Message, state: FSMContext, bot: Bot)
                 await bot.send_message(
                     chat_id=admin_id,
                     text=forward_text,
-                    parse_mode="Markdown",
+                    parse_mode="HTML",
                     reply_markup=kb
                 )
                 success_count += 1
@@ -93,17 +97,20 @@ async def admin_reply_handler(message: types.Message, bot: Bot):
         return
 
     reply_to = message.reply_to_message
-    if not reply_to.text or "👤 *Support Ticket*" not in reply_to.text:
+    if not reply_to.text or "Support Ticket #" not in reply_to.text:
         return
 
     try:
         import re
         # Find Ticket ID and User ID
         ticket_match = re.search(r"Support Ticket #(\d+)", reply_to.text)
-        user_match = re.search(r"ID: `(\d+)`", reply_to.text)
+        user_match = re.search(r"ID: (\d+)", reply_to.text)  # Plain text ID search
         
         if not ticket_match or not user_match:
-            return
+            # Try searching in <code> tags if HTML was used
+            user_match = re.search(r"ID: <code>(\d+)</code>", reply_to.text)
+            if not user_match:
+                return
             
         ticket_id = int(ticket_match.group(1))
         target_user_id = int(user_match.group(1))
@@ -111,8 +118,8 @@ async def admin_reply_handler(message: types.Message, bot: Bot):
         # 1. Send admin's reply to the user
         await bot.send_message(
             chat_id=target_user_id,
-            text=f"👨‍💻 *Support Reply:*\n\n{message.text}",
-            parse_mode="Markdown"
+            text=f"👨‍💻 <b>Support Reply:</b>\n\n{html.escape(message.text)}",
+            parse_mode="HTML"
         )
         
         # 2. DELETE the ticket from DB (Self-Cleaning)
@@ -122,7 +129,7 @@ async def admin_reply_handler(message: types.Message, bot: Bot):
             repo = SupportTicketRepository(session)
             await repo.delete(ticket_id)
 
-        await message.reply("✅ Reply sent and ticket resolved (deleted from DB).")
+        await message.reply("✅ Reply sent and ticket resolved (deleted).")
         
     except Exception as e:
         await message.reply(f"❌ Failed to process reply: {e}")
