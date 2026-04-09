@@ -9,11 +9,15 @@ from app.services.event_bus import event_bus
 from app.data.database import AsyncSessionLocal
 from app.data.repositories.marketing import MarketingRepository
 from app.utils.template_engine import DynamicTemplateEngine
-from app.bot.dispatcher import bot
+from app.services.event_bus import event_bus
+from app.data.database import AsyncSessionLocal
+from app.data.repositories.marketing import MarketingRepository
+from app.utils.template_engine import DynamicTemplateEngine
 from config import settings
 
 class MarketingEngine:
-    def __init__(self):
+    def __init__(self, bot=None):
+        self.bot = bot # Dependency Injection (prevents illegal layer-to-layer imports)
         self.repo: Optional[MarketingRepository] = None
         self.active_keywords = ["signal", "alert", "indicator", "trade", "fomo", "gold", "xau", "premium"]
         self.bot_username: Optional[str] = None
@@ -25,7 +29,7 @@ class MarketingEngine:
         
         # Get bot username for {{handle}} placeholder
         try:
-            me = await bot.get_me()
+            me = await self.bot.get_me()
             self.bot_username = f"@{me.username}"
         except Exception as e:
             logger.warning(f"Could not fetch bot username: {e}")
@@ -121,7 +125,7 @@ class MarketingEngine:
 
             for admin_id in settings.admin_ids:
                 try:
-                    await bot.send_message(admin_id, report, parse_mode="HTML")
+                    await self.bot.send_message(admin_id, report, parse_mode="HTML")
                 except Exception as e:
                     logger.error(f"Failed to send report to admin {admin_id}: {e}")
 

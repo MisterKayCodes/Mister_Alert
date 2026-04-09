@@ -104,12 +104,23 @@ async def admin_update_system(callback: types.CallbackQuery):
     )
     stdout, stderr = await process.communicate()
     
+    # 2.1 Auto-install Dependencies
+    await callback.message.edit_text("📦 <b>Installing dependencies...</b>\n\n<i>This may take a moment...</i>", parse_mode="HTML")
+    pip_process = await asyncio.create_subprocess_shell(
+        f"{sys.executable} -m pip install -r requirements.txt",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    p_stdout, p_stderr = await pip_process.communicate()
+    
     output = stdout.decode('utf-8').strip()
     error_out = stderr.decode('utf-8').strip()
+    pip_out = p_stdout.decode('utf-8').strip()
     
     full_output = []
-    if output: full_output.append(output)
-    if error_out: full_output.append(error_out)
+    if output: full_output.append(f"Git: {output}")
+    if error_out: full_output.append(f"Git Err: {error_out}")
+    if pip_out: full_output.append(f"Pip: {pip_out}")
     
     log_text = "\n".join(full_output)[:3000] # Telegram limit safety
     
