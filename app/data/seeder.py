@@ -4,6 +4,7 @@ if they don't already exist in the database.
 """
 import asyncio
 import logging
+from sqlalchemy import select
 from app.data.database import AsyncSessionLocal
 from app.data.economy_repository import SettingsRepository, PaymentMethodRepository
 
@@ -59,12 +60,18 @@ async def seed_defaults():
                 await settings_repo.set(key, value, description)
                 logger.info(f"Seeded setting: {key}")
 
-        for name, details in DEFAULT_PAYMENT_METHODS:
-            all_pms = await pm_repo.get_all()
-            names = [p.name for p in all_pms]
-            if name not in names:
                 await pm_repo.create(name, details)
                 logger.info(f"Seeded payment method: {name}")
+
+        # Seed Marketing Goals
+        from app.data.models import MarketingGoal
+        result = await session.execute(select(MarketingGoal))
+        if not result.scalars().first():
+            replies_goal = MarketingGoal(goal_type='daily_replies', target_value=15)
+            posts_goal = MarketingGoal(goal_type='daily_posts', target_value=2)
+            session.add_all([replies_goal, posts_goal])
+            await session.commit()
+            logger.info("Seeded default Marketing Goals.")
 
     logger.info("✅ Seeder complete.")
 

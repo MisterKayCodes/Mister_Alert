@@ -134,3 +134,51 @@ class Voucher(Base):
     used_at = Column(DateTime(timezone=True), nullable=True)
 
     user = relationship("User", lazy="selectin")
+
+
+# ─────────────────────────────────────────────────
+# MARKETING ENGINE (MME) LAYER
+# ─────────────────────────────────────────────────
+
+class MarketingTemplate(Base):
+    """Stores high-value 'Trojan Horse' message templates."""
+    __tablename__ = "marketing_templates"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    content = Column(Text, nullable=False)  # Supports {{handle}} placeholder
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class MarketingTarget(Base):
+    """Groups or channels where the UserBot is active."""
+    __tablename__ = "marketing_targets"
+
+    id = Column(Integer, primary_key=True)
+    chat_id = Column(String, unique=True, index=True, nullable=False)
+    chat_title = Column(String, nullable=True)
+    is_monitored = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class MarketingStat(Base):
+    """Tracks interaction history for analytics."""
+    __tablename__ = "marketing_stats"
+
+    id = Column(Integer, primary_key=True)
+    type = Column(String, nullable=False) # 'reply' (keyword hit) or 'post' (timed drop)
+    chat_id = Column(String, nullable=False)
+    template_name = Column(String, nullable=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class MarketingGoal(Base):
+    """Stores daily/weekly outreach targets."""
+    __tablename__ = "marketing_goals"
+
+    id = Column(Integer, primary_key=True)
+    goal_type = Column(String, default="daily_replies") # 'daily_replies', 'daily_posts'
+    target_value = Column(Integer, default=15)
+    current_value = Column(Integer, default=0)
+    last_reset = Column(DateTime(timezone=True), server_default=func.now())

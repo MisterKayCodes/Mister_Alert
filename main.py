@@ -112,16 +112,40 @@ async def main():
     # 5. Initialize & Start SubscriptionService (Revenue Protection Layer)
     from app.services.subscription_service import SubscriptionService
     sub_service = SubscriptionService()
+
+    # 6. Initialize & Start Marketing Engine (Growth Layer)
+    from app.services.userbot_client import userbot_client
+    from app.services.marketing_engine import MarketingEngine
+    from app.data.economy_repository import SettingsRepository
     
-    # 6. Connect all components and run concurrently
-    logger.info("🧠 Nervous System, Brain, and Eyes connected.")
+    mme = MarketingEngine()
+    await mme.setup()
+
+    # Load session string and credentials from DB if available, otherwise fallback to .env
+    async with AsyncSessionLocal() as session:
+        settings_repo = SettingsRepository(session)
+        db_session = await settings_repo.get("telegram_session_string")
+        db_api_id = await settings_repo.get("telegram_api_id")
+        db_api_hash = await settings_repo.get("telegram_api_hash")
+        
+    # Convert db_api_id string to int if it exists
+    api_id_int = int(db_api_id) if db_api_id and db_api_id.isdigit() else None
+    
+    # 7. Connect all components and run concurrently
+    logger.info("🧠 Nervous System, Brain, Eyes, and Marketing Engine connected.")
     
     try:
         # Run Bot Polling, Price Polling, and Subscription Checks concurrently
         await asyncio.gather(
             start_bot(),          # Telegram Interface (Long Polling)
             price_service.start(), # Price Provider (Background Loop)
-            sub_service.start()    # Subscription Monitor (Background Loop)
+            sub_service.start(),    # Subscription Monitor (Background Loop)
+            userbot_client.start(
+                session_string=db_session,
+                api_id=api_id_int,
+                api_hash=db_api_hash
+            ),  # UserBot (Background Listener)
+            mme.start_reporting_logic() # Marketing Stats Scheduler
         )
     except (KeyboardInterrupt, SystemExit):
         logger.warning("Shutting down...")

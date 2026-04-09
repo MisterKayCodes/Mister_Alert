@@ -34,7 +34,9 @@ from .middlewares.rate_limit import RateLimitMiddleware
 def setup_routers():
     from .routers import start, alerts, trades, calculators, history, shop, support, recovery
     from .routers.admin import dashboard_router, users_router, economy_router, settings_router, support_router as admin_support_router, vouchers_router, stats_router
+    from .routers.marketing.dashboard import router as marketing_router
     
+    dp.include_router(marketing_router)
     dp.include_router(dashboard_router)
     dp.include_router(users_router)
     dp.include_router(economy_router)

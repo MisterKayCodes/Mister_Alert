@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     admin_ids: List[int] = []
     redis_url: Optional[str] = None
 
+    # UserBot (Telethon) Settings
+    telegram_api_id: Optional[int] = None
+    telegram_api_hash: Optional[str] = None
+    telegram_session_string: Optional[str] = None
+
     @field_validator("admin_ids", mode="before")
     @classmethod
     def parse_admin_ids(cls, v: Any) -> List[int]:
