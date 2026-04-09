@@ -72,6 +72,28 @@ class UserBotClient:
         self._is_running = False
         logger.info("UserBot stopped.")
 
+    async def validate_credentials(self, api_id: int, api_hash: str, session_string: str) -> tuple[bool, str]:
+        """Performs a pre-flight connection test to verify credentials."""
+        temp_client = TelegramClient(
+            StringSession(session_string),
+            api_id,
+            api_hash,
+            connection_retries=1,
+            retry_delay=1
+        )
+        try:
+            logger.info("Performing pre-flight credential check...")
+            await temp_client.connect()
+            if not await temp_client.is_user_authorized():
+                return False, "Session string is invalid or expired."
+            
+            me = await temp_client.get_me()
+            return True, f"Successfully authorized as {me.first_name}"
+        except Exception as e:
+            return False, str(e)
+        finally:
+            await temp_client.disconnect()
+
     async def reload(self, new_session_string: str, new_api_id: Optional[int] = None, new_api_hash: Optional[str] = None):
         """Hot reload with a new session string and/or API credentials."""
         logger.info("Hot reloading UserBot session and credentials...")

@@ -59,7 +59,7 @@ async def marketing_dashboard(message: types.Message, state: FSMContext):
     await message.answer(text, reply_markup=_marketing_main_keyboard(), parse_mode="HTML")
 
 # ─────────────────────────────────────────────────
-# ACCOUNT ROTATION / SESSION (CRUD)
+# ACCOUNT ROTATION / SESSION (CRUD with Validation)
 # ─────────────────────────────────────────────────
 
 @router.callback_query(F.data == "mkt:session")
@@ -81,7 +81,7 @@ async def mkt_session_status(callback: types.CallbackQuery):
         f"🔹 <b>API ID:</b> <code>{current_id}</code>\n"
         f"🔹 <b>API HASH:</b> <code>{current_hash[:6]}...</code>\n"
         f"🔹 <b>SESSION:</b> <code>{current_session[:15]}...</code>\n\n"
-        "You can rotate the entire Telegram App config here. To start over with a fresh account, update these fields."
+        "Updating these will trigger a <b>Pre-flight Connection Test</b> before saving."
     )
     
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
@@ -104,13 +104,7 @@ async def mkt_api_id_save(message: types.Message, state: FSMContext):
     if not message.text.isdigit():
         return await message.answer("❌ Invalid ID. Please send numbers only.")
     
-    async with AsyncSessionLocal() as session:
-        sr = SettingsRepository(session)
-        await sr.set("telegram_api_id", message.text, "UserBot API ID")
-    
-    await message.answer("✅ API ID Updated.")
-    await _perform_hot_reload(message)
-    await marketing_dashboard(message, state)
+    await _validate_and_save(message, state, "telegram_api_id", message.text)
 
 @router.callback_query(F.data == "mkt:api_hash_update")
 @admin_only
@@ -121,13 +115,7 @@ async def mkt_api_hash_update_start(callback: types.CallbackQuery, state: FSMCon
 @router.message(MarketingStates.waiting_for_api_hash)
 @admin_only
 async def mkt_api_hash_save(message: types.Message, state: FSMContext):
-    async with AsyncSessionLocal() as session:
-        sr = SettingsRepository(session)
-        await sr.set("telegram_api_hash", message.text.strip(), "UserBot API Hash")
-    
-    await message.answer("✅ API Hash Updated.")
-    await _perform_hot_reload(message)
-    await marketing_dashboard(message, state)
+    await _validate_and_save(message, state, "telegram_api_hash", message.text.strip())
 
 @router.callback_query(F.data == "mkt:session_update")
 @admin_only
@@ -138,29 +126,49 @@ async def mkt_session_update_start(callback: types.CallbackQuery, state: FSMCont
 @router.message(MarketingStates.waiting_for_session_string)
 @admin_only
 async def mkt_session_save(message: types.Message, state: FSMContext):
-    async with AsyncSessionLocal() as session:
-        sr = SettingsRepository(session)
-        await sr.set("telegram_session_string", message.text.strip(), "UserBot Session String")
-    
-    await message.answer("✅ Session String Updated.")
-    await _perform_hot_reload(message)
-    await marketing_dashboard(message, state)
+    await _validate_and_save(message, state, "telegram_session_string", message.text.strip())
 
-async def _perform_hot_reload(message: types.Message):
+# --- REUSABLE VALIDATOR & HOT RELOAD HELPER ---
+
+async def _validate_and_save(message: types.Message, state: FSMContext, key: str, value: str):
     from app.services.userbot_client import userbot_client
+    
+    await message.answer("🔍 <b>Performing Pre-flight Connection Test...</b>", parse_mode="HTML")
+    
     async with AsyncSessionLocal() as session:
         sr = SettingsRepository(session)
-        s = await sr.get("telegram_session_string")
-        aid = await sr.get("telegram_api_id")
-        ahash = await sr.get("telegram_api_hash")
+        # Fetch existing values to test the combination
+        aid = await sr.get("telegram_api_id") or str(settings.telegram_api_id)
+        ahash = await sr.get("telegram_api_hash") or settings.telegram_api_hash
+        sess = await sr.get("telegram_session_string") or settings.telegram_session_string
+        
+        # Override the one being updated
+        if key == "telegram_api_id": aid = value
+        elif key == "telegram_api_hash": ahash = value
+        elif key == "telegram_session_string": sess = value
+
+    success, info = await userbot_client.validate_credentials(int(aid), ahash, sess)
     
-    aid_int = int(aid) if aid and aid.isdigit() else None
-    await message.answer("🔄 <b>Hot Reloading Engine...</b>", parse_mode="HTML")
+    if not success:
+        await message.answer(f"❌ <b>Validation Failed!</b>\n\n<code>{info}</code>\n\nSettings not saved. Please check your credentials and try again.", parse_mode="HTML")
+        return
+
+    # If successful, save to DB
+    async with AsyncSessionLocal() as session:
+        sr = SettingsRepository(session)
+        await sr.set(key, value, f"UserBot {key}")
+    
+    await message.answer(f"✅ <b>Validated!</b> {info}.\nSettings saved to database.", parse_mode="HTML")
+    
+    # Trigger Hot Reload
+    await message.answer("🔄 <b>Reloading UserBot Engine...</b>", parse_mode="HTML")
     try:
-        await userbot_client.reload(new_session_string=s, new_api_id=aid_int, new_api_hash=ahash)
-        await message.answer("✅ Reload complete.")
+        await userbot_client.reload(new_session_string=sess, new_api_id=int(aid), new_api_hash=ahash)
+        await message.answer("♻️ <b>Engine Active.</b>")
     except Exception as e:
-        await message.answer(f"❌ Reload failed: {e}")
+        await message.answer(f"⚠️ Reload failed: {e}")
+    
+    await marketing_dashboard(message, state)
 
 # ─────────────────────────────────────────────────
 # STATS VIEW
