@@ -1,6 +1,6 @@
 import random
 import string
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.data.models import Voucher
 from datetime import datetime, timezone
@@ -63,3 +63,15 @@ class VoucherRepository:
             "message": "✅ Code redeemed successfully!",
             "reward_type": voucher.reward_type
         }
+
+    async def get_stats(self) -> dict:
+        """Returns voucher economy statistics for the admin dashboard."""
+        total_result = await self.session.execute(select(func.count(Voucher.id)))
+        total = total_result.scalar() or 0
+        
+        redeemed_result = await self.session.execute(
+            select(func.count(Voucher.id)).where(Voucher.is_used == True)
+        )
+        redeemed = redeemed_result.scalar() or 0
+        
+        return {"total": total, "redeemed": redeemed, "unused": total - redeemed}

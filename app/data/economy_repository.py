@@ -161,12 +161,15 @@ class TransactionRepository:
             return None
 
         if tx.tx_type == "credits":
+            # Use the actual transaction amount instead of hardcoded 10
+            credit_amount = int(tx.amount)
             await self.session.execute(
                 update(User).where(User.id == tx.user_id)
-                .values(credits=User.credits + 10)
+                .values(credits=User.credits + credit_amount)
             )
-        elif tx.tx_type in ("monthly", "yearly"):
-            days = 30 if tx.tx_type == "monthly" else 365
+        elif tx.tx_type in ("weekly", "monthly", "yearly"):
+            days_map = {"weekly": 7, "monthly": 30, "yearly": 365}
+            days = days_map[tx.tx_type]
             await self.session.execute(
                 update(User).where(User.id == tx.user_id)
                 .values(

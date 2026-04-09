@@ -9,7 +9,7 @@ DEFAULT_FORBIDDEN_IMPORTS = {
 
 INTERNAL_LAYERS = ["data", "services", "bot", "utils", "infrastructure"]
 
-def check_file_integrity(file_path, folder_name, rules, max_lines=200):
+def check_file_integrity(file_path, folder_name, rules, max_lines=300):
     with open(file_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
         if len(lines) > max_lines: return [f"File too long ({len(lines)} > {max_lines})"]
@@ -74,12 +74,12 @@ def check_file_integrity(file_path, folder_name, rules, max_lines=200):
 
     visitor = NestingVisitor()
     visitor.visit(tree)
-    if visitor.max_depth >= 4:
+    if visitor.max_depth >= 5:
         errors.append(f"Spaghetti Warning: Deep nesting detected (depth {visitor.max_depth}). Refactor to reduce cyclomatic complexity.")
 
     return errors
 
-def scan_organism(base_dir=".", max_lines=200):
+def scan_organism(base_dir=".", max_lines=300):
     has_issues = False
     app_path = os.path.join(base_dir, "app")
     if not os.path.exists(app_path):

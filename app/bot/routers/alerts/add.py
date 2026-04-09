@@ -87,14 +87,34 @@ async def process_price(message: types.Message, state: FSMContext):
     async with AsyncSessionLocal() as session:
         user_repo = UserRepository(session)
         alert_repo = AlertRepository(session)
+        settings_repo = SettingsRepository(session)
         user = await user_repo.get_by_telegram_id(telegram_id)
         if not user:
             await message.answer(error("User not found."), parse_mode="Markdown")
             await state.clear()
             return
         
-        # Enforce limits (TODO: as part of mineralization but let's keep consistency)
-        # For now we're just modularizing
+        # Enforce alert limits
+        current_alerts = await alert_repo.get_user_alerts(user.id)
+        active_count = len([a for a in current_alerts if a.is_active])
+        
+        if user.is_premium:
+            limit = int(await settings_repo.get("alert_limit_premium") or "50")
+        else:
+            limit = int(await settings_repo.get("alert_limit_free") or "3")
+        
+        if active_count >= limit:
+            tier = "Premium ⭐" if user.is_premium else "Free 🆓"
+            await message.answer(
+                f"{error('Alert Limit Reached!')}\n{DIVIDER}\n"
+                f"Your *{tier}* plan allows *{limit}* active alerts.\n"
+                f"You currently have *{active_count}*.\n\n"
+                f"_Delete an old alert or upgrade to Premium for more!_",
+                parse_mode="Markdown"
+            )
+            await state.clear()
+            return
+        
         await alert_repo.create_alert(user_id=user.id, symbol=symbol,
                                       price_above=(price if condition == "above" else None),
                                       price_below=(price if condition == "below" else None))
@@ -109,3 +129,4 @@ async def process_price(message: types.Message, state: FSMContext):
         parse_mode="Markdown"
     )
     await state.clear()
+

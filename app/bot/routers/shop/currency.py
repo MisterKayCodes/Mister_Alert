@@ -33,3 +33,4 @@ async def set_currency(callback: types.CallbackQuery):
         f"_Shop prices now show in {currency_code}._",
         parse_mode="Markdown"
     )
+    await callback.answer()

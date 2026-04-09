@@ -107,7 +107,6 @@ async def admin_start_reply(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 @router.message(AdminSupportStates.awaiting_reply_text)
-@admin_only
 async def admin_send_reply(message: types.Message, state: FSMContext, bot: Bot):
     data = await state.get_data()
     ticket_id = data["reply_ticket_id"]

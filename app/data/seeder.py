@@ -19,6 +19,7 @@ DEFAULT_SETTINGS = [
     ("alert_limit_premium", "50", "Max alerts for premium users"),
     ("credits_per_alert", "1", "Credits deducted per alert created"),
     ("price_credits_10", "5", "Base USD Price for 10 credits"),
+    ("price_premium_weekly", "7", "Base USD Weekly subscription price"),
     ("price_premium_monthly", "20", "Base USD Monthly subscription price"),
     ("price_premium_yearly", "180", "Base USD Yearly subscription price"),
     ("subscription_footer",

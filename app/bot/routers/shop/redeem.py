@@ -1,6 +1,7 @@
 import logging
 from aiogram import Router, types, F, Bot
 from aiogram.fsm.context import FSMContext
+from config import settings
 from aiogram.fsm.state import State, StatesGroup
 from app.data.database import AsyncSessionLocal
 from app.data.voucher_repository import VoucherRepository
@@ -82,4 +83,22 @@ async def process_code_redemption(message: types.Message, state: FSMContext):
         await session.commit()
     
     await message.answer(success_msg, parse_mode="HTML")
+    
+    # Notify admins of the redemption
+    try:
+        bot: Bot = message.bot
+        admin_text = (
+            f"🎟️ <b>Voucher Redeemed!</b>\n\n"
+            f"👤 User: @{message.from_user.username or 'N/A'} (<code>{user_id}</code>)\n"
+            f"🔑 Code: <code>{code}</code>\n"
+            f"🎁 Reward: <code>{reward}</code>"
+        )
+        for admin_id in settings.admin_ids:
+            try:
+                await bot.send_message(chat_id=admin_id, text=admin_text, parse_mode="HTML")
+            except Exception as e:
+                logger.warning(f"Failed to notify admin {admin_id}: {e}")
+    except Exception as e:
+        logger.error(f"Failed to notify admins of redemption: {e}")
+    
     await state.clear()

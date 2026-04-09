@@ -8,6 +8,7 @@ from app.data.database import AsyncSessionLocal
 from app.data.repositories.user import UserRepository
 from app.data.repositories.trade import TradeRepository
 from app.data.repositories.alert import AlertRepository
+from app.data.voucher_repository import VoucherRepository
 from .dashboard import admin_only
 
 router = Router()
@@ -30,6 +31,9 @@ async def admin_stats_dashboard(callback: types.CallbackQuery):
         total_alerts = await alert_repo.count_active()
         total_trades = await trade_repo.count_active()
         
+        voucher_repo = VoucherRepository(session)
+        voucher_stats = await voucher_repo.get_stats()
+        
     text = (
         "📊 <b>Advanced System Analytics</b>\n\n"
         f"👥 <b>Total Users:</b> <code>{total_users}</code>\n"
@@ -37,6 +41,9 @@ async def admin_stats_dashboard(callback: types.CallbackQuery):
         f"📈 <b>Growth (7d):</b> +<code>{new_users}</code> users\n\n"
         f"🔔 <b>Active Alerts:</b> <code>{total_alerts}</code>\n"
         f"📉 <b>Active Trades:</b> <code>{total_trades}</code>\n\n"
+        f"🎟️ <b>Vouchers Minted:</b> <code>{voucher_stats['total']}</code>\n"
+        f"✅ <b>Vouchers Redeemed:</b> <code>{voucher_stats['redeemed']}</code>\n"
+        f"📦 <b>Vouchers Unused:</b> <code>{voucher_stats['unused']}</code>\n\n"
         "<i>Use the Export button to download a full CSV of your userbase for marketing.</i>"
     )
     

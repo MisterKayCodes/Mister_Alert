@@ -1,5 +1,5 @@
 import logging
-from aiogram import Router, types, F
+from aiogram import Router, types, F, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from app.data.database import AsyncSessionLocal
@@ -99,6 +99,61 @@ async def admin_pm_toggle(callback: types.CallbackQuery):
             await callback.answer(f"Payment method is now {status}")
     await callback.message.edit_text(f"✅ Status toggled for method ID {pm_id}.")
 
+# ── Payment Method Field Edit ────────────────────────────────────────────────
+
+@router.callback_query(F.data.startswith("admin:pm_field:"))
+@admin_only
+async def admin_pm_field_edit(callback: types.CallbackQuery, state: FSMContext):
+    parts = callback.data.split(":")
+    field = parts[2]  # 'name' or 'details'
+    pm_id = int(parts[3])
+    await state.update_data(pm_edit_id=pm_id, pm_edit_field=field)
+    await state.set_state(AdminPaymentStates.awaiting_pm_edit_value)
+    label = "name" if field == "name" else "payment details"
+    await callback.message.edit_text(
+        f"📝 Enter the new *{label}* for Payment Method #{pm_id}:",
+        parse_mode="Markdown",
+        reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[
+            [types.InlineKeyboardButton(text="❌ Cancel", callback_data="admin:payments")]
+        ])
+    )
+    await callback.answer()
+
+@router.message(AdminPaymentStates.awaiting_pm_edit_value)
+async def admin_pm_edit_value_received(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    pm_id = data["pm_edit_id"]
+    field = data["pm_edit_field"]
+    value = message.text.strip()
+    
+    async with AsyncSessionLocal() as session:
+        pm_repo = PaymentMethodRepository(session)
+        if field == "name":
+            await pm_repo.update(pm_id, name=value)
+        else:
+            await pm_repo.update(pm_id, details=value)
+    
+    await message.answer(f"✅ Payment method #{pm_id} *{field}* updated successfully!", parse_mode="Markdown")
+    await state.clear()
+
+# ── Payment Method Delete ────────────────────────────────────────────────────
+
+@router.callback_query(F.data.startswith("admin:pm_delete:"))
+@admin_only
+async def admin_pm_delete(callback: types.CallbackQuery):
+    pm_id = int(callback.data.split(":")[2])
+    async with AsyncSessionLocal() as session:
+        pm_repo = PaymentMethodRepository(session)
+        pm = await pm_repo.get_by_id(pm_id)
+        if not pm:
+            await callback.answer("❌ Payment method not found.")
+            return
+        await pm_repo.delete(pm_id)
+    await callback.message.edit_text(f"🗑️ Payment method #{pm_id} deleted.")
+    await callback.answer("Deleted!")
+
+# ── Transactions ─────────────────────────────────────────────────────────────
+
 @router.callback_query(F.data == "admin:transactions")
 @admin_only
 async def admin_transactions(callback: types.CallbackQuery):
@@ -107,7 +162,14 @@ async def admin_transactions(callback: types.CallbackQuery):
         pending = await tx_repo.get_pending()
 
     if not pending:
-        await callback.message.edit_text("✅ No pending transactions! All clear.", parse_mode="Markdown")
+        await callback.message.edit_text(
+            "✅ No pending transactions! All clear.",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[
+                [types.InlineKeyboardButton(text="↩️ Back", callback_data="admin:back")]
+            ]),
+            parse_mode="Markdown"
+        )
+        await callback.answer()
         return
 
     for tx in pending[:5]:
@@ -130,15 +192,69 @@ async def admin_transactions(callback: types.CallbackQuery):
 
 @router.callback_query(F.data.startswith("admin:approve:"))
 @admin_only
-async def admin_approve_tx(callback: types.CallbackQuery):
+async def admin_approve_tx(callback: types.CallbackQuery, bot: Bot):
     tx_id = int(callback.data.split(":")[2])
 
     async with AsyncSessionLocal() as session:
         tx_repo = TransactionRepository(session)
         tx = await tx_repo.approve_and_credit_user(tx_id, admin_note="Approved by admin")
+        
+        if tx:
+            # Notify the user
+            from app.data.repositories import UserRepository
+            user_repo = UserRepository(session)
+            user = await user_repo.get_by_id(tx.user_id)
+            if user:
+                try:
+                    await bot.send_message(
+                        chat_id=int(user.telegram_id),
+                        text=(
+                            f"✅ <b>Payment Approved!</b>\n\n"
+                            f"Your {tx.tx_type} transaction of <code>{tx.amount} {tx.currency}</code> has been approved.\n\n"
+                            f"<i>Your account has been credited. Enjoy!</i>"
+                        ),
+                        parse_mode="HTML"
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to notify user {user.telegram_id} of approval: {e}")
 
     await callback.message.edit_text(
         f"✅ Transaction #{tx_id} *approved* and user credited!",
         parse_mode="Markdown"
     )
     await callback.answer("Approved!")
+
+@router.callback_query(F.data.startswith("admin:reject:"))
+@admin_only
+async def admin_reject_tx(callback: types.CallbackQuery, bot: Bot):
+    tx_id = int(callback.data.split(":")[2])
+
+    async with AsyncSessionLocal() as session:
+        tx_repo = TransactionRepository(session)
+        tx = await tx_repo.reject(tx_id, admin_note="Rejected by admin")
+        
+        if tx:
+            # Notify the user
+            from app.data.repositories import UserRepository
+            user_repo = UserRepository(session)
+            user = await user_repo.get_by_id(tx.user_id)
+            if user:
+                try:
+                    await bot.send_message(
+                        chat_id=int(user.telegram_id),
+                        text=(
+                            f"❌ <b>Payment Rejected</b>\n\n"
+                            f"Your {tx.tx_type} transaction of <code>{tx.amount} {tx.currency}</code> was not approved.\n\n"
+                            f"<i>If you believe this is an error, please contact Support.</i>"
+                        ),
+                        parse_mode="HTML"
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to notify user {user.telegram_id} of rejection: {e}")
+
+    await callback.message.edit_text(
+        f"❌ Transaction #{tx_id} *rejected*.",
+        parse_mode="Markdown"
+    )
+    await callback.answer("Rejected.")
+
