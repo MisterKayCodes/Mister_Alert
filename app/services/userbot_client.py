@@ -94,6 +94,27 @@ class UserBotClient:
         finally:
             await temp_client.disconnect()
 
+    async def sync_status(self):
+        """Syncs the client's internal running status with the stored DB credentials."""
+        from app.data.database import AsyncSessionLocal
+        from app.data.economy_repository import SettingsRepository
+        
+        async with AsyncSessionLocal() as session:
+            sr = SettingsRepository(session)
+            sess = await sr.get("telegram_session_string")
+            aid = await sr.get("telegram_api_id")
+            ahash = await sr.get("telegram_api_hash")
+        
+        if not sess or not aid or not ahash:
+            return False
+
+        try:
+            aid_int = int(aid)
+            success, _ = await self.validate_credentials(aid_int, ahash, sess)
+            return success
+        except:
+            return False
+
     async def reload(self, new_session_string: str, new_api_id: Optional[int] = None, new_api_hash: Optional[str] = None):
         """Hot reload with a new session string and/or API credentials."""
         logger.info("Hot reloading UserBot session and credentials...")

@@ -129,6 +129,11 @@ async def main():
             db_api_id = await settings_repo.get("telegram_api_id")
             db_api_hash = await settings_repo.get("telegram_api_hash")
             
+        # Perform initial status sync
+        if db_session and db_api_id and db_api_hash:
+            logger.info("🔍 Syncing UserBot status with stored credentials...")
+            await userbot_client.sync_status()
+            
         # Convert db_api_id string to int if it exists
         api_id_int = int(db_api_id) if db_api_id and db_api_id.isdigit() else None
         

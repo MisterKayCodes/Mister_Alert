@@ -64,14 +64,36 @@ async def seed_defaults():
                 logger.info(f"Seeded payment method: {name}")
 
         # Seed Marketing Goals
-        from app.data.models import MarketingGoal
+        from app.data.models import MarketingGoal, MarketingTemplate
         result = await session.execute(select(MarketingGoal))
         if not result.scalars().first():
             replies_goal = MarketingGoal(goal_type='daily_replies', target_value=15)
             posts_goal = MarketingGoal(goal_type='daily_posts', target_value=2)
             session.add_all([replies_goal, posts_goal])
-            await session.commit()
             logger.info("Seeded default Marketing Goals.")
+
+        # Seed Evergreen Marketing Templates
+        templates = [
+            {
+                "name": "Gold Safe Haven",
+                "content": "Gold (XAUUSD) continues to show institutional safe-haven value. 🏛️ Don't trade on gut feeling—get the same precise levels the pros use with {{handle}}. Precision alerts for serious traders."
+            },
+            {
+                "name": "Crypto Never Sleeps",
+                "content": "The crypto market never sleeps, and neither does {{handle}}. ⚡ Whether it's the weekend BTC volatility or weekday altseason, stay ahead of the curve with our 24/7 scanning engine."
+            },
+            {
+                "name": "Liquid King (Forex)",
+                "content": "Efficiency is key in the FX majors. 💹 From EURUSD scalp setups to GBPJPY swings, {{handle}} delivers the metrics you need to trade with confidence. Join the circle of sharp traders."
+            }
+        ]
+        for t in templates:
+            res = await session.execute(select(MarketingTemplate).where(MarketingTemplate.name == t["name"]))
+            if not res.scalar_one_or_none():
+                session.add(MarketingTemplate(**t, is_active=True))
+                logger.info(f"Seeded template: {t['name']}")
+
+        await session.commit()
 
     logger.info("✅ Seeder complete.")
 

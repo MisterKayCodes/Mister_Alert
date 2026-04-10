@@ -20,6 +20,7 @@ class MarketingStates(StatesGroup):
     waiting_for_session_string = State()
     waiting_for_api_id = State()
     waiting_for_api_hash = State()
+    waiting_for_goal_target = State()
 
 def _marketing_main_keyboard() -> types.InlineKeyboardMarkup:
     from app.services.userbot_client import userbot_client
@@ -59,7 +60,97 @@ async def marketing_dashboard(message: types.Message, state: FSMContext):
     await message.answer(text, reply_markup=_marketing_main_keyboard(), parse_mode="HTML")
 
 # ─────────────────────────────────────────────────
-# ACCOUNT ROTATION / SESSION (CRUD with Validation)
+# TARGET GROUPS MANAGEMENT
+# ─────────────────────────────────────────────────
+
+@router.callback_query(F.data == "mkt:groups")
+@admin_only
+async def mkt_groups_list(callback: types.CallbackQuery):
+    async with AsyncSessionLocal() as session:
+        repo = MarketingRepository(session)
+        targets = await repo.get_targets()
+
+    text = "🌍 <b>Monitored Target Groups</b>\n\n"
+    if not targets:
+        text += "<i>No groups monitored yet. Add a group to start keyword-based outreach.</i>"
+    else:
+        for t in targets:
+            status = "🟢" if t.is_monitored else "⚪"
+            text += f"{status} <b>ID:</b> <code>{t.chat_id}</code>\n"
+
+    kb = types.InlineKeyboardMarkup(inline_keyboard=[
+        [types.InlineKeyboardButton(text="➕ Add New Group", callback_data="mkt:target_add")],
+        [types.InlineKeyboardButton(text="↩️ Back", callback_data="mkt:back")]
+    ])
+    await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+
+@router.callback_query(F.data == "mkt:target_add")
+@admin_only
+async def mkt_target_add_start(callback: types.CallbackQuery, state: FSMContext):
+    text = (
+        "📥 <b>Send the Telegram Chat ID of the target group:</b>\n\n"
+        "<i>Tip: You can get the chat ID by using a bot like @userinfobot or by forwarding a message from the group to yourself.</i>"
+    )
+    await callback.message.edit_text(text, parse_mode="HTML")
+    await state.set_state(MarketingStates.waiting_for_group_id)
+
+@router.message(MarketingStates.waiting_for_group_id)
+@admin_only
+async def mkt_target_save(message: types.Message, state: FSMContext):
+    chat_id = message.text.strip()
+    async with AsyncSessionLocal() as session:
+        repo = MarketingRepository(session)
+        await repo.add_target(chat_id=chat_id, is_monitored=True)
+    
+    await message.answer(f"✅ Group <code>{chat_id}</code> added to monitoring.", parse_mode="HTML")
+    await marketing_dashboard(message, state)
+
+# ─────────────────────────────────────────────────
+# GOALS MANAGEMENT
+# ─────────────────────────────────────────────────
+
+@router.callback_query(F.data == "mkt:goals")
+@admin_only
+async def mkt_goals_panel(callback: types.CallbackQuery):
+    async with AsyncSessionLocal() as session:
+        repo = MarketingRepository(session)
+        goals = await repo.get_stats_summary()
+    
+    text = "🎯 <b>Marketing Daily Goals</b>\n\nConfigure your safety limits here:\n\n"
+    kb_list = []
+    
+    for g_type, data in goals.items():
+        name = "💬 Keyword Replies" if g_type == 'daily_replies' else "📢 Timed Posts"
+        text += f"🔹 {name}: <b>{data['target']}</b> per day\n"
+        kb_list.append([types.InlineKeyboardButton(text=f"⚙️ Edit {g_type}", callback_data=f"mkt:goal_edit:{g_type}")])
+
+    kb_list.append([types.InlineKeyboardButton(text="↩️ Back", callback_data="mkt:back")])
+    await callback.message.edit_text(text, reply_markup=types.InlineKeyboardMarkup(inline_keyboard=kb_list), parse_mode="HTML")
+
+@router.callback_query(F.data.startswith("mkt:goal_edit:"))
+@admin_only
+async def mkt_goal_update_start(callback: types.CallbackQuery, state: FSMContext):
+    goal_type = callback.data.split(":")[-1]
+    await state.update_data(goal_type=goal_type)
+    await callback.message.edit_text(f"🔢 Enter new daily target for <b>{goal_type}</b>:", parse_mode="HTML")
+    await state.set_state(MarketingStates.waiting_for_goal_target)
+
+@router.message(MarketingStates.waiting_for_goal_target)
+@admin_only
+async def mkt_goal_save(message: types.Message, state: FSMContext):
+    if not message.text.isdigit():
+        return await message.answer("❌ Please enter a valid number.")
+    
+    data = await state.get_data()
+    async with AsyncSessionLocal() as session:
+        repo = MarketingRepository(session)
+        await repo.update_goal(type=data['goal_type'], target=int(message.text))
+    
+    await message.answer(f"✅ Daily target for <b>{data['goal_type']}</b> updated to {message.text}.", parse_mode="HTML")
+    await marketing_dashboard(message, state)
+
+# ─────────────────────────────────────────────────
+# ACCOUNT ROTATION / SESSION
 # ─────────────────────────────────────────────────
 
 @router.callback_query(F.data == "mkt:session")
@@ -81,7 +172,7 @@ async def mkt_session_status(callback: types.CallbackQuery):
         f"🔹 <b>API ID:</b> <code>{current_id}</code>\n"
         f"🔹 <b>API HASH:</b> <code>{current_hash[:6]}...</code>\n"
         f"🔹 <b>SESSION:</b> <code>{current_session[:15]}...</code>\n\n"
-        "Updating these will trigger a <b>Pre-flight Connection Test</b> before saving."
+        "Updating any of these will trigger a <b>Pre-flight Connection Test</b>."
     )
     
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
@@ -137,12 +228,10 @@ async def _validate_and_save(message: types.Message, state: FSMContext, key: str
     
     async with AsyncSessionLocal() as session:
         sr = SettingsRepository(session)
-        # Fetch existing values to test the combination
         aid = await sr.get("telegram_api_id") or str(settings.telegram_api_id)
         ahash = await sr.get("telegram_api_hash") or settings.telegram_api_hash
         sess = await sr.get("telegram_session_string") or settings.telegram_session_string
         
-        # Override the one being updated
         if key == "telegram_api_id": aid = value
         elif key == "telegram_api_hash": ahash = value
         elif key == "telegram_session_string": sess = value
@@ -150,18 +239,15 @@ async def _validate_and_save(message: types.Message, state: FSMContext, key: str
     success, info = await userbot_client.validate_credentials(int(aid), ahash, sess)
     
     if not success:
-        await message.answer(f"❌ <b>Validation Failed!</b>\n\n<code>{info}</code>\n\nSettings not saved. Please check your credentials and try again.", parse_mode="HTML")
+        await message.answer(f"❌ <b>Validation Failed!</b>\n\n<code>{info}</code>", parse_mode="HTML")
         return
 
-    # If successful, save to DB
     async with AsyncSessionLocal() as session:
         sr = SettingsRepository(session)
         await sr.set(key, value, f"UserBot {key}")
     
-    await message.answer(f"✅ <b>Validated!</b> {info}.\nSettings saved to database.", parse_mode="HTML")
+    await message.answer(f"✅ <b>Validated!</b> {info}.\nSettings saved.")
     
-    # Trigger Hot Reload
-    await message.answer("🔄 <b>Reloading UserBot Engine...</b>", parse_mode="HTML")
     try:
         await userbot_client.reload(new_session_string=sess, new_api_id=int(aid), new_api_hash=ahash)
         await message.answer("♻️ <b>Engine Active.</b>")
@@ -186,17 +272,11 @@ async def mkt_stats(callback: types.CallbackQuery):
         name = "Keyword Replies" if g_type == 'daily_replies' else "Timed Posts"
         progress = f"<code>{data['current']}/{data['target']}</code>"
         percent = (data['current'] / data['target'] * 100) if data['target'] > 0 else 0
-        
-        # Simple progress bar
-        bar_len = 10
-        filled = int(percent / 100 * bar_len)
-        bar = "🟢" * filled + "⚪" * (bar_len - filled)
-        
+        filled = int(percent / 100 * 10)
+        bar = "🟢" * filled + "⚪" * (10 - filled)
         text += f"🔹 {name}:\n{bar} {progress} ({percent:.1f}%)\n\n"
 
-    kb = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text="↩️ Back", callback_data="mkt:back")]
-    ])
+    kb = types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="↩️ Back", callback_data="mkt:back")]])
     await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
 
 @router.callback_query(F.data == "mkt:back")
@@ -222,11 +302,10 @@ async def mkt_templates_list(callback: types.CallbackQuery):
 
     text = "📝 <b>Marketing Templates</b>\n\n"
     if not templates:
-        text += "<i>No templates found. Create one to start outreach.</i>"
+        text += "<i>No templates found.</i>"
     else:
         for t in templates:
-            status = "✅" if t.is_active else "❌"
-            text += f"{status} <b>{t.name}</b>\n<code>{t.content[:50]}...</code>\n\n"
+            text += f"✅ <b>{t.name}</b>\n<code>{t.content[:50]}...</code>\n\n"
 
     kb = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text="➕ Add Template", callback_data="mkt:template_add")],
@@ -237,14 +316,14 @@ async def mkt_templates_list(callback: types.CallbackQuery):
 @router.callback_query(F.data == "mkt:template_add")
 @admin_only
 async def mkt_template_add_start(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.edit_text("Enter a short <b>Name</b> for this template (e.g., 'Gold Value'):", parse_mode="HTML")
+    await callback.message.edit_text("Enter <b>Name</b> for template:", parse_mode="HTML")
     await state.set_state(MarketingStates.waiting_for_template_name)
 
 @router.message(MarketingStates.waiting_for_template_name)
 @admin_only
 async def mkt_template_save_name(message: types.Message, state: FSMContext):
     await state.update_data(name=message.text)
-    await message.answer("Now enter the <b>Message Content</b>.\n\nTip: Use <code>{{handle}}</code> to dynamically insert your bot's username.", parse_mode="HTML")
+    await message.answer("Enter <b>Message Content</b> (supports {{handle}}):", parse_mode="HTML")
     await state.set_state(MarketingStates.waiting_for_template_content)
 
 @router.message(MarketingStates.waiting_for_template_content)
@@ -254,6 +333,14 @@ async def mkt_template_save_content(message: types.Message, state: FSMContext):
     async with AsyncSessionLocal() as session:
         repo = MarketingRepository(session)
         await repo.create_template(name=data['name'], content=message.text)
-    
-    await message.answer(f"✅ Template <b>{data['name']}</b> saved successfully!", parse_mode="HTML")
-    await marketing_dashboard(message, state) # Go back to main
+    await message.answer(f"✅ Template <b>{data['name']}</b> saved!")
+    await marketing_dashboard(message, state)
+
+# ─────────────────────────────────────────────────
+# MANUAL POST (PLACEHOLDER)
+# ─────────────────────────────────────────────────
+
+@router.callback_query(F.data == "mkt:manual_post")
+@admin_only
+async def mkt_manual_post(callback: types.CallbackQuery):
+    await callback.answer("🚧 Manual posting flow is coming soon. Use keyword-based outreach for now!", show_alert=True)
