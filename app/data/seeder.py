@@ -99,4 +99,10 @@ async def seed_defaults():
 
 
 if __name__ == "__main__":
+    # Basic logging config for standalone runs
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)-8s | %(message)s",
+        datefmt="%H:%M:%S"
+    )
     asyncio.run(seed_defaults())
